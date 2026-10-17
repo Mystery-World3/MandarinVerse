@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { completeLesson } from "@/lib/db/repository";
-import { getRequiredUser } from "@/lib/session";
+import { getCurrentUser } from "@/lib/session";
 import { z } from "zod";
 
 const CompleteBodySchema = z.object({
@@ -11,9 +11,13 @@ export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ lessonId: string }> }
 ) {
+  const user = await getCurrentUser();
+  if (!user) {
+    return NextResponse.json({ success: false, error: "Tidak terautentikasi" }, { status: 401 });
+  }
+
   try {
     const { lessonId } = await params;
-    const user = await getRequiredUser();
 
     let body = {};
     try {

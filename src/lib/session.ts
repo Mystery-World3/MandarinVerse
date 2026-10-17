@@ -36,18 +36,14 @@ export async function getCurrentUser(): Promise<SessionUser | null> {
   return null;
 }
 
+/**
+ * Returns the authenticated user or throws a 401-compatible error.
+ * In production, there is NO demo-user fallback — every caller must handle null.
+ * Use getCurrentUser() and return a 401 response directly in route handlers instead.
+ */
 export async function getRequiredUser(): Promise<SessionUser> {
   const user = await getCurrentUser();
   if (user) return user;
 
-  // Fallback for personal testing / demo when not signed in
-  return {
-    id: "demo-user-1",
-    name: "Pembelajar Mandiri",
-    email: "demo@mandarinverse.com",
-    role: "learner",
-    goal: "Percakapan Harian",
-    dailyTargetMinutes: 15,
-    level: "Beginner",
-  };
+  throw new Error("UNAUTHENTICATED");
 }

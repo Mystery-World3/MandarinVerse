@@ -1,10 +1,14 @@
 import { NextResponse } from "next/server";
 import { getUserVocabulary } from "@/lib/db/repository";
-import { getRequiredUser } from "@/lib/session";
+import { getCurrentUser } from "@/lib/session";
 
 export async function GET() {
+  const user = await getCurrentUser();
+  if (!user) {
+    return NextResponse.json({ success: false, error: "Tidak terautentikasi" }, { status: 401 });
+  }
+
   try {
-    const user = await getRequiredUser();
     const vocabulary = await getUserVocabulary(user.id);
     return NextResponse.json({ success: true, vocabulary });
   } catch (err: any) {

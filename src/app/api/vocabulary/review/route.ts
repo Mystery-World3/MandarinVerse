@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { reviewUserVocabulary } from "@/lib/db/repository";
-import { getRequiredUser } from "@/lib/session";
+import { getCurrentUser } from "@/lib/session";
 import { z } from "zod";
 
 const ReviewSchema = z.object({
@@ -9,8 +9,12 @@ const ReviewSchema = z.object({
 });
 
 export async function POST(request: NextRequest) {
+  const user = await getCurrentUser();
+  if (!user) {
+    return NextResponse.json({ success: false, error: "Tidak terautentikasi" }, { status: 401 });
+  }
+
   try {
-    const user = await getRequiredUser();
     const body = await request.json();
     const { vocabularyId, grade } = ReviewSchema.parse(body);
 

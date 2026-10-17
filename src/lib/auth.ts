@@ -3,8 +3,19 @@ import { admin } from "better-auth/plugins";
 import { Pool } from "@neondatabase/serverless";
 import { isPostgresConfigured } from "./db";
 
+// In production, BETTER_AUTH_SECRET must be a long random string.
+// Generate one with: openssl rand -base64 32
+if (process.env.NODE_ENV === "production" && !process.env.BETTER_AUTH_SECRET) {
+  throw new Error(
+    "BETTER_AUTH_SECRET belum diatur. Hasilkan nilai acak minimal 32 karakter dan tambahkan ke environment variables produksi."
+  );
+}
+
 const secret =
-  process.env.BETTER_AUTH_SECRET || "mandarinverse-production-super-secret-key-32chars";
+  process.env.BETTER_AUTH_SECRET ||
+  // Only used in development / CI when the variable is not set
+  "dev-only-secret-DO-NOT-USE-IN-PRODUCTION-replace-me";
+
 const baseURL =
   process.env.BETTER_AUTH_URL ||
   process.env.NEXT_PUBLIC_APP_URL ||
@@ -29,6 +40,9 @@ export const auth = betterAuth({
       role: {
         type: "string",
         defaultValue: "learner",
+        // Role must NEVER be settable by the user themselves.
+        // It is set server-side only via the db:make-admin script.
+        input: false,
       },
       goal: {
         type: "string",

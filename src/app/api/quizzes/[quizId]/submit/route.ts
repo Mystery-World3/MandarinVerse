@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { submitQuizAnswers } from "@/lib/db/repository";
-import { getRequiredUser } from "@/lib/session";
+import { getCurrentUser } from "@/lib/session";
 import { z } from "zod";
 
 const SubmitQuizSchema = z.object({
@@ -11,9 +11,13 @@ export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ quizId: string }> }
 ) {
+  const user = await getCurrentUser();
+  if (!user) {
+    return NextResponse.json({ success: false, error: "Tidak terautentikasi" }, { status: 401 });
+  }
+
   try {
     const { quizId } = await params;
-    const user = await getRequiredUser();
     const body = await request.json();
 
     const { answers } = SubmitQuizSchema.parse(body);

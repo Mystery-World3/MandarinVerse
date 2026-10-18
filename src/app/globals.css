@@ -34,9 +34,9 @@ body {
   transition: background-color 180ms ease, color 180ms ease;
 }
 
-/* Bridge existing light-mode Tailwind utility classes into dark mode.
-   These rules let existing pages darken without rewriting every component at once. */
+/* Compatibility layer for pages that still use light-only utility classes. */
 .dark body,
+.dark [class~="bg-[#fbfbfa]"],
 .dark .bg-white,
 .dark [class~="bg-slate-50"],
 .dark [class~="bg-gray-50"] {

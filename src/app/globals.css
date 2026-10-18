@@ -34,17 +34,23 @@ body {
   transition: background-color 180ms ease, color 180ms ease;
 }
 
-/* Compatibility layer for pages that still use light-only utility classes. */
+/*
+ * Dark theme compatibility for existing pages.
+ * Keep the teal hero/primary buttons and semantic warning/success colors intact.
+ */
 .dark body,
 .dark [class~="bg-[#fbfbfa]"],
 .dark .bg-white,
+.dark [class~="bg-white/95"],
 .dark [class~="bg-slate-50"],
 .dark [class~="bg-gray-50"] {
   background-color: #111827 !important;
 }
 
 .dark [class~="bg-slate-100"],
-.dark [class~="bg-gray-100"] {
+.dark [class~="bg-slate-200"],
+.dark [class~="bg-gray-100"],
+.dark [class~="bg-gray-200"] {
   background-color: #1f2937 !important;
 }
 
@@ -76,17 +82,66 @@ body {
   border-color: #334155 !important;
 }
 
+/* Softer surfaces for cards and controls in login/dashboard. */
+.dark [class~="bg-teal-50"] {
+  background-color: #123b3b !important;
+}
+.dark [class~="bg-sky-50"] {
+  background-color: #102f46 !important;
+}
+.dark [class~="bg-emerald-50"] {
+  background-color: #12382e !important;
+}
+.dark [class~="bg-amber-50"],
+.dark [class~="bg-amber-50/50"] {
+  background-color: #3b2d16 !important;
+}
+.dark [class~="bg-rose-50"] {
+  background-color: #431f2a !important;
+}
+.dark [class~="bg-teal-100"] {
+  background-color: #164e4a !important;
+}
+.dark [class~="bg-slate-200"] {
+  background-color: #273449 !important;
+}
+.dark [class~="text-teal-900"],
+.dark [class~="text-teal-800"],
+.dark [class~="text-amber-900"],
+.dark [class~="text-amber-800"],
+.dark [class~="text-sky-800"],
+.dark [class~="text-emerald-800"] {
+  color: #d1fae5 !important;
+}
+.dark [class~="text-teal-700"] {
+  color: #5eead4 !important;
+}
+.dark [class~="text-teal-600"] {
+  color: #5eead4 !important;
+}
+.dark [class~="text-amber-700"] {
+  color: #fcd34d !important;
+}
+.dark [class~="text-rose-700"] {
+  color: #fda4af !important;
+}
+
+/* Avoid bright white inputs in the dark login form. */
 .dark input,
 .dark textarea,
 .dark select {
-  background-color: #111827;
-  color: #e5e7eb;
-  border-color: #475569;
+  background-color: #0f172a !important;
+  color: #e5e7eb !important;
+  border-color: #475569 !important;
 }
-
 .dark input::placeholder,
 .dark textarea::placeholder {
-  color: #94a3b8;
+  color: #94a3b8 !important;
+}
+.dark input:focus,
+.dark textarea:focus,
+.dark select:focus {
+  border-color: #2dd4bf !important;
 }
 
 @media (prefers-reduced-motion: reduce) {

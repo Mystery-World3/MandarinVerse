@@ -55,6 +55,26 @@ export function isAiConfigured(): boolean {
 function getOfflineTutorResponse(message: string, lessonContext?: string): string {
   const lower = message.toLowerCase();
 
+  if (
+    (lower.includes("b") && lower.includes("p") && (lower.includes("pinyin") || lower.includes("pengucapan") || lower.includes("beda"))) ||
+    lower.includes("aspirasi") ||
+    lower.includes("bunyi b dan p")
+  ) {
+    return `## Perbedaan bunyi **b** dan **p** dalam Pinyin
+
+Dalam Pinyin Mandarin, **b** dan **p** sama-sama diucapkan tanpa getaran pita suara seperti pasangan bunyi dalam bahasa Indonesia, tetapi perbedaan utamanya adalah **hembusan udara**.
+
+- **b**: bunyi tidak berhembus kuat. Tempelkan kedua bibir, lalu lepaskan dengan hembusan kecil. Contoh: **爸 (bà)** — ayah.
+- **p**: bunyi beraspirasi, yaitu disertai hembusan udara yang jelas. Contoh: **怕 (pà)** — takut.
+
+### Cara latihan sederhana
+1. Letakkan telapak tangan atau selembar tisu di depan mulut.
+2. Ucapkan **bā** — tisu seharusnya bergerak sedikit.
+3. Ucapkan **pā** — hembusan udara terasa lebih kuat dan tisu bergerak lebih jelas.
+
+**Penting:** jangan menyamakan Pinyin **b** persis dengan huruf “b” Indonesia yang bersuara, atau Pinyin **p** dengan “p” Indonesia. Dalam Mandarin, kontras utamanya adalah ada atau tidaknya aspirasi. Latih pasangan **bā (八 — delapan)** dan **pā** untuk merasakan bedanya.`;
+  }
+
   if (lower.includes("nada") || lower.includes("tone") || lower.includes("suara")) {
     return `Dalam bahasa Mandarin ada **4 nada utama + 1 nada netral**:\n\n1. **Nada 1 (—) Datar & Tinggi**: Contoh *mā* (ibu). Ucapkan stabil dan tinggi seperti dokter meminta bilang 'Aaa'.\n2. **Nada 2 (/) Naik**: Contoh *má* (rami). Seperti intonasi bertanya 'Hah?'.\n3. **Nada 3 (V) Turun-Naik**: Contoh *mǎ* (kuda). Rendah di tenggorokan lalu sedikit naik.\n4. **Nada 4 (\\) Turun Tegas**: Contoh *mà* (memarahi). Jatuh cepat seperti menghentak 'Stop!'.\n5. **Nada Netral**: Ringan, pendek, dan santai (contoh: *ma* pada 你好吗).`;
   }
@@ -112,7 +132,7 @@ Untuk mengaktifkan tutor AI, tambahkan AI_PROVIDER, AI_API_KEY, dan AI_MODEL di 
 export async function askMandarinTutor(request: TutorRequest): Promise<TutorResponse> {
   const provider = (process.env.AI_PROVIDER || "gemini").toLowerCase();
   const apiKey = process.env.AI_API_KEY;
-  const model = process.env.AI_MODEL || (provider === "openai" ? "gpt-4o-mini" : "gemini-1.5-flash");
+  const model = process.env.AI_MODEL || (provider === "openai" ? "gpt-4o-mini" : "gemini-2.5-flash");
 
   // If no API key is provided, use high-quality offline tutor
   if (!apiKey) {
@@ -167,7 +187,7 @@ ${request.lessonContext ? `Konteks pelajaran murid saat ini: "${request.lessonCo
         const errorText = await res.text();
         console.error("Gemini API error:", errorText);
         return {
-          reply: `Mohon maaf, terjadi kendala saat menghubungi layanan AI (${res.status}). Silakan coba beberapa saat lagi atau tanyakan konsep dasar seperti nada, angka, atau salam.\n\n${getOfflineTutorResponse(request.message, request.lessonContext)}`,
+          reply: `Layanan AI sedang tidak dapat menjawab (HTTP ${res.status}). Saya berikan panduan lokal yang relevan terlebih dahulu:\n\n${getOfflineTutorResponse(request.message, request.lessonContext)}`,
           source: "fallback",
           configured: true,
           error: `API Status ${res.status}`,

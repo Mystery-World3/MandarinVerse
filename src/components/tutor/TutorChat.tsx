@@ -110,29 +110,29 @@ export function TutorChat({ initialLessonContext }: TutorChatProps) {
   };
 
   return (
-    <div className="flex flex-col h-[650px] bg-white border border-slate-200/90 rounded-3xl shadow-sm overflow-hidden">
+    <div className="flex flex-col h-[650px] bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-700 rounded-3xl shadow-sm overflow-hidden">
       {/* Tutor Header */}
-      <div className="p-4 sm:px-6 bg-slate-50/80 border-b border-slate-200/80 flex items-center justify-between">
+      <div className="p-4 sm:px-6 bg-slate-50/80 dark:bg-slate-800 border-b border-slate-200/80 dark:border-slate-700 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-2xl bg-teal-800 text-white flex items-center justify-center font-bold shadow-xs">
             <Bot className="w-5 h-5 text-teal-200" />
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h3 className="font-bold text-slate-900 text-sm">MandarinVerse AI Tutor</h3>
-              <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-teal-800 bg-teal-100 px-2 py-0.5 rounded-full">
+              <h3 className="font-bold text-slate-900 dark:text-slate-100 text-sm">MandarinVerse AI Tutor</h3>
+              <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-teal-900 dark:text-teal-100 bg-teal-100 dark:bg-teal-900/70 px-2 py-0.5 rounded-full">
                 <Sparkles className="w-3 h-3 text-teal-600" />
                 {providerInfo.provider || "Mandarin Guide"}
               </span>
             </div>
-            <p className="text-xs text-slate-600">
+            <p className="text-xs text-slate-600 dark:text-slate-300">
               Penjelasan interaktif dalam Bahasa Indonesia & Pinyin akurat
             </p>
           </div>
         </div>
 
         {lessonContext && (
-          <span className="hidden sm:inline-block text-xs bg-slate-200/70 text-slate-700 px-3 py-1 rounded-full font-medium">
+          <span className="hidden sm:inline-block text-xs bg-slate-200/70 dark:bg-slate-700 text-slate-700 dark:text-slate-100 px-3 py-1 rounded-full font-medium">
             Konteks: {lessonContext}
           </span>
         )}
@@ -156,7 +156,7 @@ export function TutorChat({ initialLessonContext }: TutorChatProps) {
               <div
                 className={`max-w-[85%] sm:max-w-[75%] rounded-2xl p-4 text-sm leading-relaxed whitespace-pre-wrap ${
                   isBot
-                    ? "bg-slate-50 border border-slate-200/80 text-slate-800"
+                    ? "bg-slate-50 dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700 text-slate-800 dark:text-slate-100"
                     : "bg-teal-700 text-white shadow-xs"
                 }`}
               >
@@ -177,7 +177,7 @@ export function TutorChat({ initialLessonContext }: TutorChatProps) {
             <div className="w-8 h-8 rounded-xl bg-teal-100 text-teal-800 flex items-center justify-center shrink-0 font-bold text-xs">
               文
             </div>
-            <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 text-xs text-slate-600 flex items-center gap-2">
+            <div className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-4 text-xs text-slate-600 dark:text-slate-200 flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-teal-600 animate-bounce" />
               <span
                 className="w-2 h-2 rounded-full bg-teal-600 animate-bounce"
@@ -196,15 +196,15 @@ export function TutorChat({ initialLessonContext }: TutorChatProps) {
       </div>
 
       {/* Quick Prompts */}
-      <div className="px-4 py-2 border-t border-slate-100 flex items-center gap-2 overflow-x-auto no-scrollbar">
-        <span className="text-[11px] font-semibold text-slate-600 shrink-0">Saran Cepat:</span>
+      <div className="px-4 py-2 border-t border-slate-100 dark:border-slate-700 flex items-center gap-2 overflow-x-auto no-scrollbar">
+        <span className="text-[11px] font-semibold text-slate-600 dark:text-slate-300 shrink-0">Saran Cepat:</span>
         {quickPrompts.map((p, idx) => (
           <button
             key={idx}
             type="button"
             disabled={isLoading}
             onClick={() => handleSend(p)}
-            className="text-xs bg-slate-100 hover:bg-teal-50 hover:text-teal-800 border border-slate-200/60 text-slate-700 px-3 py-1 rounded-full whitespace-nowrap transition-colors cursor-pointer shrink-0"
+            className="text-xs bg-slate-100 dark:bg-slate-800 hover:bg-teal-50 dark:hover:bg-teal-900/70 hover:text-teal-800 dark:hover:text-teal-100 border border-slate-200/60 dark:border-slate-600 text-slate-700 dark:text-slate-200 px-3 py-1 rounded-full whitespace-nowrap transition-colors cursor-pointer shrink-0"
           >
             {p}
           </button>
@@ -212,7 +212,7 @@ export function TutorChat({ initialLessonContext }: TutorChatProps) {
       </div>
 
       {/* Input Tray */}
-      <div className="p-3 sm:p-4 bg-white border-t border-slate-200">
+      <div className="p-3 sm:p-4 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-700">
         <form
           onSubmit={(e) => {
             e.preventDefault();
@@ -225,7 +225,7 @@ export function TutorChat({ initialLessonContext }: TutorChatProps) {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             placeholder="Tanyakan kata, nada, atau aturan tata bahasa Mandarin..."
-            className="flex-1 px-4 py-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 text-sm text-slate-900 bg-white"
+            className="flex-1 px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-600 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 text-sm text-slate-900 dark:text-slate-100 bg-white dark:bg-slate-800 placeholder:text-slate-500 dark:placeholder:text-slate-400"
             disabled={isLoading}
           />
           <Button

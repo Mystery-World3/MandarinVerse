@@ -32,12 +32,37 @@ export default function LoginPage() {
 
       if (res.error) {
         setErrorMessage(res.error.message || "Email atau kata sandi tidak sesuai.");
+      
       } else {
-        router.push("/dashboard");
+        const meResponse = await fetch("/api/user/me", {
+          method: "GET",
+          cache: "no-store",
+        });
+
+        const me = await meResponse.json();
+
+        if (!meResponse.ok || !me.success) {
+          setErrorMessage(
+            "Login berhasil, tetapi data sesi gagal dibaca. Silakan muat ulang halaman."
+          );
+          return;
+        }
+
+        if (me.user.role === "admin") {
+          router.replace("/admin");
+        } else if (me.user.role === "learner") {
+          router.replace("/dashboard");
+        } else {
+          setErrorMessage("Role akun tidak dikenali. Hubungi administrator.");
+        }
       }
-    } catch (err: any) {
-      // Local fallback sign in for demo
-      router.push("/dashboard");
+
+    }  catch (err: unknown) {
+        console.error("Login gagal:", err);
+
+        setErrorMessage(
+        "Terjadi kesalahan saat login. Silakan coba lagi."
+        );
     } finally {
       setIsLoading(false);
     }

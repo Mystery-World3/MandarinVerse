@@ -24,6 +24,11 @@ const baseURL =
 export const auth = betterAuth({
   secret,
   baseURL,
+  trustedOrigins: [
+    "https://mandarin-verse.vercel.app",
+    "https://mandarinverse-kohl.vercel.app",
+    "http://localhost:3000",
+  ],
   ...(isPostgresConfigured()
     ? {
         database: new Pool({

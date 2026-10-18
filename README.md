@@ -192,23 +192,7 @@ Untuk keamanan, MandarinVerse **tidak menyediakan endpoint registrasi admin publ
    ```bash
    npm run db:make-admin email-anda@domain.com
    ```
-3. Akun tersebut sekarang memiliki wewenang penuh untuk mengakses `/admin`.
-
----
-
-## ☁️ Panduan Deploy ke Vercel
-
-1. Push repository ini ke GitHub.
-2. Buat project baru di [Vercel](https://vercel.com).
-3. Sambungkan ke repository GitHub Anda.
-4. Pada menu **Environment Variables** di Vercel, tambahkan:
-   - `DATABASE_URL`: String koneksi Neon PostgreSQL Anda.
-   - `BETTER_AUTH_SECRET`: Kunci rahasia minimal 32 karakter acak.
-   - `BETTER_AUTH_URL`: URL domain produksi Vercel Anda (contoh: `https://mandarinverse.vercel.app`).
-   - `NEXT_PUBLIC_APP_URL`: URL domain produksi yang sama.
-   - `AI_PROVIDER`: `gemini`
-   - `AI_API_KEY`: Kunci API Gemini Anda.
-5. Klik **Deploy**. Vercel akan otomatis menjalankan `next build` dan meluncurkan aplikasi Anda secara global.
+3. Akun tersebut sekarang memiliki wewenang penuh untuk mengakses `/admin`..
 
 ---
 

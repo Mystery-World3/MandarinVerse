@@ -1,3 +1,4 @@
+
 import { headers } from "next/headers";
 import { auth } from "./auth";
 
@@ -19,30 +20,45 @@ export async function getCurrentUser(): Promise<SessionUser | null> {
     });
 
     if (session?.user) {
+      const rawRole = (session.user as any).role;
+
+      // Pertahankan role admin; petakan role user menjadi learner.
+      // Role yang tidak dikenal tidak diberi akses admin.
+      let role: SessionUser["role"];
+
+      if (rawRole === "admin") {
+        role = "admin";
+      } else if (rawRole === "user" || rawRole === "learner") {
+        role = "learner";
+      } else {
+        return null;
+      }
+
       return {
         id: session.user.id,
         name: session.user.name || "Pembelajar",
         email: session.user.email,
-        role: (session.user as any).role || "learner",
+        role,
         goal: (session.user as any).goal,
-        dailyTargetMinutes: (session.user as any).dailyTargetMinutes || 10,
+        dailyTargetMinutes:
+          (session.user as any).dailyTargetMinutes || 10,
         level: (session.user as any).level || "Beginner",
       };
     }
   } catch (err) {
-    // Session retrieval error or headers not ready
+    console.error("Gagal mengambil sesi pengguna:", err);
   }
 
   return null;
 }
 
 /**
- * Returns the authenticated user or throws a 401-compatible error.
- * In production, there is NO demo-user fallback — every caller must handle null.
- * Use getCurrentUser() and return a 401 response directly in route handlers instead.
+ * Mengembalikan pengguna yang sudah terautentikasi.
+ * Tidak menggunakan akun demo sebagai fallback.
  */
 export async function getRequiredUser(): Promise<SessionUser> {
   const user = await getCurrentUser();
+
   if (user) return user;
 
   throw new Error("UNAUTHENTICATED");

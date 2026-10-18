@@ -16,7 +16,8 @@ export default function LoginPage() {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email || !password) {
+
+    if (!email.trim() || !password) {
       setErrorMessage("Silakan lengkapi email dan kata sandi Anda.");
       return;
     }
@@ -26,47 +27,51 @@ export default function LoginPage() {
 
     try {
       const res = await signIn.email({
-        email,
+        email: email.trim(),
         password,
       });
 
       if (res.error) {
-        setErrorMessage(res.error.message || "Email atau kata sandi tidak sesuai.");
-      
-      } else {
-        const meResponse = await fetch("/api/user/me", {
-          method: "GET",
-          cache: "no-store",
-        });
-
-        const me = await meResponse.json();
-
-        if (!meResponse.ok || !me.success) {
-          setErrorMessage(
-            "Login berhasil, tetapi data sesi gagal dibaca. Silakan muat ulang halaman."
-          );
-          return;
-        }
-
-        if (me.user.role === "admin") {
-          router.replace("/admin");
-        } else if (me.user.role === "learner") {
-          router.replace("/dashboard");
-        } else {
-          setErrorMessage("Role akun tidak dikenali. Hubungi administrator.");
-        }
+        setErrorMessage(
+          res.error.message || "Email atau kata sandi tidak sesuai."
+        );
+        return;
       }
 
-    }  catch (err: unknown) {
-        console.error("Login gagal:", err);
+      const meResponse = await fetch("/api/user/me", {
+        method: "GET",
+        cache: "no-store",
+      });
 
+      const me = await meResponse.json();
+
+      if (!meResponse.ok || !me.success || !me.user) {
         setErrorMessage(
-        "Terjadi kesalahan saat login. Silakan coba lagi."
+          "Login berhasil, tetapi sesi belum bisa diverifikasi. Coba muat ulang halaman."
         );
+        return;
+      }
+
+      if (me.user.role === "admin") {
+        router.replace("/admin");
+      } else if (me.user.role === "learner") {
+        router.replace("/dashboard");
+      } else {
+        setErrorMessage(
+          "Role akun tidak dikenali. Hubungi administrator."
+        );
+      }
+    } catch (err: unknown) {
+      console.error("Login gagal:", err);
+
+      setErrorMessage(
+        "Terjadi kesalahan saat login. Silakan coba lagi."
+      );
     } finally {
       setIsLoading(false);
     }
   };
+
 
   const handleDemoLogin = (role: "learner" | "admin") => {
     if (role === "admin") {

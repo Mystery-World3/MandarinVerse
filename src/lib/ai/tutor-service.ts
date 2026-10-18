@@ -79,14 +79,34 @@ function getOfflineTutorResponse(message: string, lessonContext?: string): strin
     return `Kaidah waktu bahasa Mandarin:\n\n- **现在几点？(Xiànzài jǐ diǎn?)**: Sekarang jam berapa?\n- **两点 (liǎng diǎn)**: Jam dua (ingat: gunakan 两 bukan 二 untuk jam 2!).\n- **星期一 (xīngqīyī)**: Hari Senin s.d **星期天 (xīngqītiān)**: Hari Minggu.\n- **今天 (jīntiān)**: Hari ini, **明天 (míngtiān)**: Besok.`;
   }
 
-  return `Halo! Saya **MandarinVerse AI Tutor** pribadi Anda.\n\n` +
-    (lessonContext ? `📌 Konteks Pelajaran Saat Ini: **${lessonContext}**\n\n` : "") +
-    `Pertanyaan Anda: "*${message}*"\n\n` +
-    `💡 **Tips Belajar**: Untuk pemula penutur bahasa Indonesia, selalu perhatikan:\n` +
-    `1. **Pinyin & Nada**: Pastikan melatih 4 nada agar lawan bicara tidak salah paham.\n` +
-    `2. **Urutan Kalimat**: Keterangan waktu selalu diletakkan SEBELUM kata kerja (contoh: *我晚上学习* - Wǒ wǎnshang xuéxí = Saya malam hari belajar).\n` +
-    `3. **Tanya apa saja**: Anda bisa menanyakan tata bahasa, perbedaan kata, atau arti kalimat Mandarin lainnya!\n\n` +
-    `*(Catatan Sistem: Kunci API AI eksternal belum diatur di server .env.local. Respon ini dihasilkan oleh Asisten Bahasa Mandarin internal MandarinVerse. Tambahkan AI_API_KEY untuk mengaktifkan model LLM aktif).*`;
+  if (lower.includes("restoran") || lower.includes("makanan") || lower.includes("memesan") || lower.includes("pesan makanan") || lower.includes("menu") || lower.includes("makan")) {
+    return `## Memesan makanan di restoran 🍜
+
+Berikut frasa praktis yang bisa langsung Anda gunakan:
+
+- **服务员 (fúwùyuán)** — Pelayan.
+- **请给我菜单 (qǐng gěi wǒ càidān)** — Tolong berikan saya menu.
+- **我想要这个 (wǒ xiǎng yào zhège)** — Saya ingin yang ini.
+- **我要一碗米饭 (wǒ yào yì wǎn mǐfàn)** — Saya mau semangkuk nasi.
+- **请问，这个多少钱？(qǐngwèn, zhège duōshǎo qián?)** — Permisi, berapa harga ini?
+- **买单 (mǎidān)** — Minta tagihan / bayar.
+
+### Contoh percakapan
+
+**顾客 (gùkè) — Pelanggan:** 你好！请给我菜单。 (Nǐ hǎo! Qǐng gěi wǒ càidān.) — Halo! Tolong berikan menu.
+
+**服务员 (fúwùyuán) — Pelayan:** 好的。您想吃什么？ (Hǎo de. Nín xiǎng chī shénme?) — Baik. Anda ingin makan apa?
+
+**顾客 (gùkè) — Pelanggan:** 我要一碗米饭和一杯水。 (Wǒ yào yì wǎn mǐfàn hé yì bēi shuǐ.) — Saya mau semangkuk nasi dan segelas air.
+
+**服务员 (fúwùyuán) — Pelayan:** 好的，请稍等。 (Hǎo de, qǐng shāo děng.) — Baik, silakan tunggu sebentar.
+
+**Tips:** 请 (qǐng) membuat permintaan terdengar lebih sopan. Untuk pemula, pola **我要…… (wǒ yào...) — Saya mau...** mudah digunakan.`;
+  }
+
+  return `Maaf, layanan AI generatif belum dikonfigurasi, jadi saya belum bisa menjawab pertanyaan ini secara khusus.
+
+Untuk mengaktifkan tutor AI, tambahkan AI_PROVIDER, AI_API_KEY, dan AI_MODEL di Environment Variables Vercel, lalu redeploy. Sementara itu, coba tanyakan tentang nada Mandarin, salam, perkenalan, angka, atau waktu yang sudah didukung oleh panduan dasar.`;
 }
 
 export async function askMandarinTutor(request: TutorRequest): Promise<TutorResponse> {

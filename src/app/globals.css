@@ -153,3 +153,42 @@ body {
     animation-duration: 0.01ms !important;
   }
 }
+
+
+/* Course catalog and syllabus contrast refinements */
+.dark [class~="bg-slate-100"] {
+  background-color: #1e293b !important;
+}
+.dark [class~="bg-slate-50/70"],
+.dark [class~="bg-slate-50/80"] {
+  background-color: #172235 !important;
+}
+.dark [class~="border-slate-300"],
+.dark [class~="border-slate-200/90"],
+.dark [class~="border-slate-200/80"] {
+  border-color: #475569 !important;
+}
+.dark [class~="text-slate-950"] {
+  color: #f8fafc !important;
+}
+.dark [class~="text-slate-700"] {
+  color: #dbe4f0 !important;
+}
+.dark [class~="text-slate-800"] {
+  color: #e2e8f0 !important;
+}
+.dark [class~="text-teal-800"] {
+  color: #99f6e4 !important;
+}
+.dark [class~="text-amber-950"] {
+  color: #fde68a !important;
+}
+.dark [class~="bg-amber-50"] {
+  background-color: #3b2d16 !important;
+}
+.dark [class~="border-amber-300"] {
+  border-color: #92400e !important;
+}
+.dark [class~="hover\\:bg-teal-50"]:hover {
+  background-color: #123b3b !important;
+}

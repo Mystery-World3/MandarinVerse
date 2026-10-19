@@ -195,12 +195,12 @@ export default function LessonPlayerClient({ courseId, lessonId }: LessonPlayerC
 
         {/* TAB 1: INTRO & OBJECTIVES */}
         {activeTab === "intro" && (
-          <div className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 shadow-xs space-y-6">
+          <div className="bg-white border border-slate-300 rounded-3xl p-6 sm:p-8 shadow-sm space-y-6">
             <div className="space-y-3">
               <h3 className="text-base font-bold text-slate-900 tracking-tight">
                 Pengantar Pelajaran
               </h3>
-              <p className="text-sm text-slate-700 leading-relaxed bg-slate-50 p-4 rounded-2xl border border-slate-200/80">
+              <p className="text-sm text-slate-800 leading-relaxed bg-indigo-50 p-4 rounded-2xl border border-indigo-200">
                 {content.introduction}
               </p>
             </div>
@@ -213,7 +213,7 @@ export default function LessonPlayerClient({ courseId, lessonId }: LessonPlayerC
                 {content.objectives.map((obj, idx) => (
                   <div
                     key={idx}
-                    className="flex items-start gap-3 p-3 rounded-2xl bg-teal-50/50 border border-teal-100 text-xs sm:text-sm text-teal-900 font-medium"
+                    className="flex items-start gap-3 p-3 rounded-2xl bg-teal-50 border border-teal-300 text-xs sm:text-sm text-teal-950 font-medium"
                   >
                     <CheckCircle2 className="w-4 h-4 text-teal-700 shrink-0 mt-0.5" />
                     <span>{obj}</span>
@@ -223,7 +223,7 @@ export default function LessonPlayerClient({ courseId, lessonId }: LessonPlayerC
             </div>
 
             {content.culturalNote && (
-              <div className="p-4 rounded-2xl bg-amber-50 border border-amber-200/80 text-xs sm:text-sm text-amber-900 space-y-1">
+              <div className="p-4 rounded-2xl bg-amber-50 border border-amber-300 text-xs sm:text-sm text-amber-950 space-y-1">
                 <span className="font-bold flex items-center gap-1.5 text-amber-950">
                   <Sparkles className="w-4 h-4 text-amber-600" /> Wawasan Budaya & Pelafalan
                 </span>
@@ -262,7 +262,7 @@ export default function LessonPlayerClient({ courseId, lessonId }: LessonPlayerC
               {content.hanziFocus.map((hf, idx) => (
                 <div
                   key={idx}
-                  className="p-5 rounded-2xl bg-slate-50 border border-slate-200 flex flex-col justify-between space-y-3"
+                  className="p-5 rounded-2xl bg-violet-50 border border-violet-200 flex flex-col justify-between space-y-3"
                 >
                   <div className="flex items-start justify-between">
                     <div>
@@ -313,7 +313,7 @@ export default function LessonPlayerClient({ courseId, lessonId }: LessonPlayerC
               {content.vocabulary.map((vocab) => (
                 <div
                   key={vocab.id}
-                  className="p-4 rounded-2xl bg-slate-50/70 hover:bg-teal-50/30 border border-slate-200 transition-all space-y-2"
+                  className="p-4 rounded-2xl bg-sky-50 hover:bg-sky-100 border border-sky-200 transition-all space-y-2"
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex items-baseline gap-3">
@@ -336,7 +336,7 @@ export default function LessonPlayerClient({ courseId, lessonId }: LessonPlayerC
                   </div>
 
                   {vocab.exampleChinese && (
-                    <div className="bg-white p-3 rounded-xl border border-slate-200/80 text-xs space-y-1">
+                    <div className="bg-white p-3 rounded-xl border border-slate-300 text-xs space-y-1">
                       <div className="flex items-center justify-between">
                         <span className="font-medium text-slate-900">{vocab.exampleChinese}</span>
                         <AudioButton text={vocab.exampleChinese} size="sm" />
@@ -392,7 +392,7 @@ export default function LessonPlayerClient({ courseId, lessonId }: LessonPlayerC
 
             <div className="space-y-4">
               {content.grammar.map((g, idx) => (
-                <div key={idx} className="p-5 rounded-2xl bg-slate-50 border border-slate-200 space-y-3">
+                <div key={idx} className="p-5 rounded-2xl bg-violet-50 border border-violet-200 space-y-3">
                   <h4 className="text-sm font-bold text-slate-900 flex items-center gap-2">
                     <span className="w-5 h-5 rounded-md bg-teal-700 text-white flex items-center justify-center text-xs">
                       {idx + 1}
@@ -400,7 +400,7 @@ export default function LessonPlayerClient({ courseId, lessonId }: LessonPlayerC
                     {g.title}
                   </h4>
 
-                  <div className="p-3 bg-teal-50/70 border border-teal-200 rounded-xl font-mono text-xs text-teal-900 font-bold">
+                  <div className="p-3 bg-teal-100 border border-teal-300 rounded-xl font-mono text-xs text-teal-950 font-bold">
                     Pola: {g.pattern}
                   </div>
 
@@ -413,7 +413,7 @@ export default function LessonPlayerClient({ courseId, lessonId }: LessonPlayerC
                       Contoh Kalimat:
                     </span>
                     {g.examples.map((ex, exIdx) => (
-                      <div key={exIdx} className="bg-white p-3 rounded-xl border border-slate-200 text-xs space-y-1">
+                      <div key={exIdx} className="bg-white p-3 rounded-xl border border-slate-300 text-xs space-y-1">
                         <div className="flex items-center justify-between">
                           <span className="font-semibold text-slate-900">{ex.chinese}</span>
                           <AudioButton text={ex.chinese} size="sm" />
@@ -421,7 +421,7 @@ export default function LessonPlayerClient({ courseId, lessonId }: LessonPlayerC
                         <div className="text-teal-700 font-mono text-[11px]">{ex.pinyin}</div>
                         <div className="text-slate-600">{ex.indonesian}</div>
                         {ex.breakdown && (
-                          <div className="text-[10px] text-slate-600 italic bg-slate-50 p-1.5 rounded">
+                          <div className="text-[10px] text-slate-600 italic bg-slate-100 p-1.5 rounded">
                             🔍 {ex.breakdown}
                           </div>
                         )}

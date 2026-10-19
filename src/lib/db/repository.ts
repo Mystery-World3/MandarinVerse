@@ -28,7 +28,7 @@ function assertDatabaseInProduction() {
   if (process.env.NODE_ENV === "production" && !isPostgresConfigured()) {
     throw new Error(
       "DATABASE_URL belum dikonfigurasi. Penyimpanan lokal tidak didukung di lingkungan produksi (Vercel). " +
-        "Tambahkan DATABASE_URL Neon PostgreSQL ke environment variables."
+      "Tambahkan DATABASE_URL Neon PostgreSQL ke environment variables."
     );
   }
 }
@@ -103,25 +103,42 @@ function saveLocalStore(store: LocalStore) {
 // COURSES & LESSONS
 // ==========================================
 
+
 export async function getCourses(): Promise<Course[]> {
   if (isPostgresConfigured()) {
     try {
       const rows = await query<any>(
-        `SELECT id, slug, title, title_chinese as "titleChinese", description, level, path_index as "pathIndex", order_index as "orderIndex", is_published as "isPublished" 
-         FROM courses WHERE is_published = true ORDER BY path_index ASC, order_index ASC`
+        `SELECT id
+         FROM courses
+         WHERE is_published = true`
       );
-      if (rows && rows.length > 0) {
-        return rows;
-      }
+
+      const publishedIds = new Set(
+        rows.map((row: any) => String(row.id))
+      );
+
+      // Pertahankan struktur units dan lessons dari kurikulum lokal.
+      return INITIAL_COURSES.filter(
+        (course) =>
+          course.isPublished &&
+          publishedIds.has(String(course.id))
+      );
     } catch (e) {
       if (process.env.NODE_ENV === "production") {
-        throw new Error(`Gagal memuat daftar kursus dari database: ${(e as Error).message}`);
+        throw new Error(
+          `Gagal memuat daftar kursus dari database: ${(e as Error).message}`
+        );
       }
-      console.error("Postgres getCourses error, falling back to local dataset:", e);
+
+      console.error("Postgres getCourses error:", e);
     }
   }
-  return getLocalStore().courses.filter((c) => c.isPublished);
+
+  return getLocalStore().courses.filter(
+    (course) => course.isPublished
+  );
 }
+
 
 export async function getCourseById(courseId: string): Promise<Course | null> {
   const courses = await getCourses();

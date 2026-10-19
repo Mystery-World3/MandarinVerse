@@ -28,13 +28,15 @@ export const auth = betterAuth({
     "https://mandarin-verse.vercel.app",
     "https://mandarinverse-kohl.vercel.app",
     "http://localhost:3000",
+    "http://localhost:3001",
   ],
+
   ...(isPostgresConfigured()
     ? {
-        database: new Pool({
-          connectionString: process.env.DATABASE_URL,
-        }),
-      }
+      database: new Pool({
+        connectionString: process.env.DATABASE_URL,
+      }),
+    }
     : {}),
   emailAndPassword: {
     enabled: true,

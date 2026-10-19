@@ -73,7 +73,7 @@ export default function CourseDetailClient({ courseId }: { courseId: string }) {
   const units = course.units || [];
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#fbfbfa] text-slate-900">
+    <div className="min-h-screen flex flex-col bg-slate-50 text-slate-950">
       <Navbar />
 
       <main className="flex-1 max-w-5xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-10 space-y-8">
@@ -121,7 +121,7 @@ export default function CourseDetailClient({ courseId }: { courseId: string }) {
             {units.map((unit, uIdx) => (
               <div
                 key={unit.id}
-                className="bg-white border border-slate-300 rounded-3xl p-6 shadow-sm space-y-5"
+                className="bg-white border border-slate-300 rounded-3xl p-6 shadow-sm space-y-5 motion-safe:animate-[fade-up_500ms_ease-out_both]"
               >
                 <div className="flex items-start justify-between gap-4 pb-4 border-b border-slate-100">
                   <div>
@@ -129,7 +129,7 @@ export default function CourseDetailClient({ courseId }: { courseId: string }) {
                       Unit {uIdx + 1}
                     </span>
                     <h3 className="text-lg font-bold text-slate-900 mt-0.5">{unit.title}</h3>
-                    <p className="text-xs text-slate-600 mt-0.5">{unit.description}</p>
+                    <p className="text-xs text-slate-700 mt-0.5">{unit.description}</p>
                   </div>
                   <span className="font-serif text-teal-800 text-sm font-semibold shrink-0">
                     {unit.titleChinese}
@@ -141,7 +141,7 @@ export default function CourseDetailClient({ courseId }: { courseId: string }) {
                   {(unit.lessons || []).map((lesson, lIdx) => (
                     <div
                       key={lesson.id}
-                      className="p-4 rounded-2xl bg-slate-100 hover:bg-teal-50 border border-slate-300 hover:border-teal-500 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3 group"
+                      className="p-4 rounded-2xl bg-sky-50 hover:bg-sky-100 border border-sky-300 hover:border-teal-600 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md flex flex-col sm:flex-row sm:items-center justify-between gap-3 group"
                     >
                       <div className="flex items-start gap-3">
                         <span className="w-7 h-7 rounded-lg bg-teal-100 text-teal-800 flex items-center justify-center font-bold text-xs shrink-0 mt-0.5">
@@ -186,7 +186,7 @@ export default function CourseDetailClient({ courseId }: { courseId: string }) {
                     {(unit.quizzes || []).map((quiz) => (
                       <div
                         key={quiz.id}
-                        className="p-4 rounded-2xl bg-amber-50 border border-amber-300 flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+                        className="p-4 rounded-2xl bg-amber-50 border border-amber-400 flex flex-col sm:flex-row sm:items-center justify-between gap-3"
                       >
                         <div className="flex items-center gap-3">
                           <div className="w-8 h-8 rounded-xl bg-amber-100 text-amber-800 flex items-center justify-center font-bold text-xs shrink-0">

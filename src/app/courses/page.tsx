@@ -105,7 +105,7 @@ export default function CoursesCatalogPage() {
               return (
                 <div
                   key={course.id}
-                  className="bg-white border border-slate-300 rounded-3xl p-6 sm:p-7 shadow-sm hover:shadow-md hover:border-teal-300 transition-all flex flex-col justify-between group"
+                  className="bg-white border border-slate-300 rounded-3xl p-6 sm:p-7 shadow-sm hover:shadow-lg hover:border-teal-500 transition-all duration-300 hover:-translate-y-1 motion-safe:animate-[fade-up_500ms_ease-out_both] flex flex-col justify-between group"
                 >
                   <div className="space-y-4">
                     <div className="flex items-center justify-between">

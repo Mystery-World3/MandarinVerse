@@ -192,3 +192,38 @@ body {
 .dark [class~="hover\\:bg-teal-50"]:hover {
   background-color: #123b3b !important;
 }
+
+
+/* Stronger, intentional contrast for lesson sections and course cards */
+.bg-indigo-50 { background-color: #eef2ff; }
+.border-indigo-200 { border-color: #a5b4fc; }
+.text-slate-800 { color: #1e293b; }
+.bg-violet-50 { background-color: #f5f3ff; }
+.border-violet-200 { border-color: #c4b5fd; }
+.bg-sky-50 { background-color: #f0f9ff; }
+.border-sky-200 { border-color: #7dd3fc; }
+.bg-teal-100 { background-color: #ccfbf1; }
+.border-teal-300 { border-color: #5eead4; }
+.border-amber-400 { border-color: #fbbf24; }
+
+.dark .bg-indigo-50 { background-color: #202b4b !important; }
+.dark .border-indigo-200 { border-color: #6478b8 !important; }
+.dark .bg-violet-50 { background-color: #302448 !important; }
+.dark .border-violet-200 { border-color: #8b72b5 !important; }
+.dark .bg-sky-50 { background-color: #142d40 !important; }
+.dark .bg-sky-100 { background-color: #1b3c52 !important; }
+.dark .border-sky-200 { border-color: #477b9c !important; }
+.dark .bg-teal-100 { background-color: #164e4a !important; }
+.dark .text-teal-950 { color: #ccfbf1 !important; }
+.dark .text-amber-950 { color: #fde68a !important; }
+.dark .border-teal-300 { border-color: #2dd4bf !important; }
+.dark .border-amber-400 { border-color: #b7791f !important; }
+.dark .text-slate-800 { color: #e2e8f0 !important; }
+
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .motion-safe\\:animate-\\[fade-up_500ms_ease-out_both\\] { animation: none !important; }
+}

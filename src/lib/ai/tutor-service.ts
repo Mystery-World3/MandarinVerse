@@ -190,9 +190,9 @@ export async function askMandarinTutor(request: TutorRequest): Promise<TutorResp
       );
 
       // If Vercel has an outdated/unsupported AI_MODEL value, retry once with a known fallback.
-      if (res.status === 404 && activeModel !== "gemini-2.5-flash") {
-        console.warn(`Gemini model "${activeModel}" returned 404; retrying with gemini-2.5-flash.`);
-        activeModel = "gemini-2.5-flash";
+      if (res.status === 404 && activeModel !== "gemini-3.8-flash") {
+        console.warn(`Gemini model "${activeModel}" returned 404; retrying with gemini-3.8-flash.`);
+        activeModel = "gemini-3.8-flash";
         res = await fetch(
           `https://generativelanguage.googleapis.com/v1beta/models/${activeModel}:generateContent`,
           {

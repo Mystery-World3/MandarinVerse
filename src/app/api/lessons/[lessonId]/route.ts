@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getCurrentUser } from "@/lib/session";
 import { getLessonById } from "@/lib/db/repository";
 
 export async function GET(

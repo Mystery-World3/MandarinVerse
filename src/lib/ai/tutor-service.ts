@@ -205,11 +205,34 @@ export async function askMandarinTutor(request: TutorRequest): Promise<TutorResp
         );
       }
 
+      // Retry transient capacity/rate-limit errors with bounded backoff.
+      // This avoids infinite retries while giving temporary overload a chance to clear.
+      for (let attempt = 0; attempt < 2 && (res.status === 503 || res.status === 429 || res.status === 502 || res.status === 504); attempt++) {
+        const delayMs = attempt === 0 ? 1500 : 3500;
+        console.warn(`Gemini returned HTTP ${res.status}; retrying in ${delayMs}ms (attempt ${attempt + 1}/2).`);
+        await new Promise((resolve) => setTimeout(resolve, delayMs));
+        res = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/${activeModel}:generateContent`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
+            body: requestBody,
+          }
+        );
+      }
+
       if (!res.ok) {
         const errorText = await res.text();
         console.error("Gemini API error:", errorText);
+
+        const reply = res.status === 503 || res.status === 429
+          ? "Tutor AI sedang sibuk karena permintaan ke layanan AI sedang tinggi. Pertanyaan lu belum berhasil diproses. Coba kirim ulang beberapa saat lagi."
+          : res.status === 404
+          ? "Model AI yang dikonfigurasi tidak tersedia (HTTP 404). Administrator perlu memeriksa AI_MODEL di Environment Variables Vercel."
+          : `Tutor AI belum bisa memproses pertanyaan ini (HTTP ${res.status}). Coba lagi sebentar. Jika berulang, administrator perlu memeriksa konfigurasi AI di Vercel.`;
+
         return {
-          reply: `Tutor AI mengalami kendala saat memproses pertanyaan (HTTP ${res.status}). Coba lagi sebentar. Jika berulang, administrator perlu memeriksa konfigurasi provider/model AI di Vercel.\n\nPanduan dasar sementara:\n${getOfflineTutorResponse(request.message, request.lessonContext)}`,
+          reply,
           source: "fallback",
           configured: true,
           error: `API Status ${res.status}`,
@@ -285,10 +308,9 @@ export async function askMandarinTutor(request: TutorRequest): Promise<TutorResp
   } catch (err: any) {
     console.error("AI Tutor unexpected error:", err);
     return {
-      reply: `Terjadi kendala jaringan saat menghubungi AI Tutor. Berikut penjelasan panduan:\n\n${getOfflineTutorResponse(request.message, request.lessonContext)}`,
+      reply: "Tutor AI sementara tidak dapat dihubungi karena kendala jaringan. Pertanyaan lu belum berhasil diproses. Coba lagi beberapa saat.",
       source: "fallback",
       configured: true,
       error: err.message,
     };
-  }
 }

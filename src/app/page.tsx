@@ -382,7 +382,7 @@ export default function LandingPage() {
                 <Button
                   variant="outline"
                   size="lg"
-                  className="border-teal-700 text-white hover:bg-teal-800/50 w-full text-base"
+                  className="bg-transparent border-teal-300 text-white hover:bg-teal-800 hover:border-teal-200 w-full text-base"
                 >
                   Sudah Punya Akun? Masuk
                 </Button>

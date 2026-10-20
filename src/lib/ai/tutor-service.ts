@@ -132,7 +132,7 @@ Untuk mengaktifkan tutor AI, tambahkan AI_PROVIDER, AI_API_KEY, dan AI_MODEL di 
 export async function askMandarinTutor(request: TutorRequest): Promise<TutorResponse> {
   const provider = (process.env.AI_PROVIDER || "gemini").toLowerCase();
   const apiKey = process.env.AI_API_KEY;
-  const model = process.env.AI_MODEL || (provider === "openai" ? "gpt-4o-mini" : "gemini-2.5-flash");
+  const model = process.env.AI_MODEL || (provider === "openai" ? "gpt-4o-mini" : "gemini-3.8-flash");
 
   // If no API key is provided, use high-quality offline tutor
   if (!apiKey) {
@@ -143,42 +143,43 @@ export async function askMandarinTutor(request: TutorRequest): Promise<TutorResp
     };
   }
 
-  const systemPrompt = `Anda adalah Tutor Bahasa Mandarin pribadi yang ramah, sabar, dan berwawasan di platform "MandarinVerse".
-Audiens Anda adalah orang Indonesia pemula yang belajar bahasa Mandarin dari nol.
-Aturan:
-1. Berikan penjelasan dalam Bahasa Indonesia yang hangat, jelas, dan mudah dipahami.
-2. Setiap kali menyebutkan kosakata atau kalimat Mandarin, SELALU sertakan Hanzi (karakter sederhana), Pinyin dengan tanda nada yang akurat, dan arti bahasa Indonesia.
-   Format: Hanzi (Pinyin) - Arti
-   Contoh: 谢谢 (xièxie) - Terima kasih
-3. Berikan contoh kalimat praktis dan jelaskan perbedaannya dengan tata bahasa Indonesia jika relevan.
-4. Jika murid bertanya tentang pengucapan atau nada, jelaskan posisi lidah dan analogi intonasi bahasa Indonesia.
-${request.lessonContext ? `Konteks pelajaran murid saat ini: "${request.lessonContext}". Sesuaikan contoh dengan konteks ini jika relevan.` : ""}`;
+  const systemPrompt = [
+    "Anda adalah Tutor Bahasa Mandarin pribadi yang ramah, sabar, dan akurat di platform MandarinVerse.",
+    "Audiens Anda adalah orang Indonesia yang belajar bahasa Mandarin dari nol.",
+    "Jawab pertanyaan Mandarin secara luas: Hanzi, Pinyin, nada, pelafalan, tata bahasa, kosakata, terjemahan, penggunaan sehari-hari, budaya bahasa, latihan, dan percakapan. Jangan batasi jawaban hanya pada contoh pertanyaan di UI.",
+    "Jawab inti pertanyaan terlebih dahulu dalam Bahasa Indonesia yang jelas dan sesuai tingkat pemula.",
+    "Untuk kosakata atau kalimat Mandarin, sertakan Hanzi, Pinyin dengan tanda nada, dan arti Bahasa Indonesia. Contoh: 谢谢 (xièxie) — terima kasih.",
+    "Sertakan contoh relevan dan jelaskan alasan atau perbedaannya bila membantu.",
+    "Gunakan riwayat percakapan sebagai konteks agar jawaban lanjutan konsisten.",
+    "Jangan mengarang Hanzi, Pinyin, aturan tata bahasa, atau fakta budaya. Jika ada beberapa arti, jelaskan; jika kurang konteks, tanyakan; jika tidak yakin, katakan dengan jujur.",
+    "Jika pertanyaan di luar pembelajaran Mandarin, arahkan dengan sopan kembali ke topik Mandarin.",
+    "Jangan mengklaim sudah mencari atau memverifikasi sumber eksternal.",
+    request.lessonContext ? "Konteks pelajaran saat ini: " + request.lessonContext + ". Gunakan bila relevan, tetapi tetap jawab pertanyaan murid." : "",
+  ].filter(Boolean).join("\n");
 
   try {
     if (provider === "gemini") {
       // Google Gemini API call
+      const history = (request.conversationHistory || [])
+        .filter((item) => item.role !== "system" && item.content.trim())
+        .slice(-8)
+        .map((item) => ({
+          role: item.role === "assistant" ? "model" : "user",
+          parts: [{ text: item.content }],
+        }));
+
       const res = await fetch(
         `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
+            systemInstruction: { parts: [{ text: systemPrompt }] },
             contents: [
-              {
-                role: "user",
-                parts: [
-                  { text: systemPrompt },
-                  ...(request.conversationHistory?.map((h) => ({
-                    text: `${h.role === "assistant" ? "Tutor" : "Murid"}: ${h.content}`,
-                  })) || []),
-                  { text: `Murid: ${request.message}` },
-                ],
-              },
+              ...history,
+              { role: "user", parts: [{ text: request.message }] },
             ],
-            generationConfig: {
-              temperature: 0.7,
-              maxOutputTokens: 1000,
-            },
+            generationConfig: { temperature: 0.4, maxOutputTokens: 1400 },
           }),
         }
       );
@@ -187,7 +188,7 @@ ${request.lessonContext ? `Konteks pelajaran murid saat ini: "${request.lessonCo
         const errorText = await res.text();
         console.error("Gemini API error:", errorText);
         return {
-          reply: `Layanan AI sedang tidak dapat menjawab (HTTP ${res.status}). Saya berikan panduan lokal yang relevan terlebih dahulu:\n\n${getOfflineTutorResponse(request.message, request.lessonContext)}`,
+          reply: `Tutor AI mengalami kendala saat memproses pertanyaan (HTTP ${res.status}). Coba lagi sebentar. Jika berulang, administrator perlu memeriksa konfigurasi provider/model AI di Vercel.\n\nPanduan dasar sementara:\n${getOfflineTutorResponse(request.message, request.lessonContext)}`,
           source: "fallback",
           configured: true,
           error: `API Status ${res.status}`,

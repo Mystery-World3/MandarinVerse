@@ -674,7 +674,8 @@ async function recordActivityPg(
        minutes_spent = study_activities.minutes_spent + EXCLUDED.minutes_spent,
        xp_gained = study_activities.xp_gained + EXCLUDED.xp_gained,
        lessons_completed = study_activities.lessons_completed + EXCLUDED.lessons_completed,
-       quizzes_taken = study_activities.quizzes_taken + EXCLUDED.quizzes_taken`,
+       quizzes_taken = study_activities.quizzes_taken + EXCLUDED.quizzes_taken,
+       created_at = EXCLUDED.created_at`,
     [
       `act-${Date.now()}`,
       userId,
@@ -738,9 +739,9 @@ export async function getUserDashboardData(userId: string): Promise<UserDashboar
       );
 
       const activities = await query<any>(
-        `SELECT date, minutes_spent as "minutesSpent", xp_gained as "xpGained", 
+        `SELECT date, created_at as "timestamp", minutes_spent as "minutesSpent", xp_gained as "xpGained",
                 lessons_completed as "lessonsCompleted", quizzes_taken as "quizzesTaken"
-         FROM study_activities WHERE user_id = $1 ORDER BY date DESC LIMIT 30`,
+         FROM study_activities WHERE user_id = $1 ORDER BY created_at DESC LIMIT 30`,
         [userId]
       );
 

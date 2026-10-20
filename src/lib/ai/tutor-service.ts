@@ -132,9 +132,9 @@ Untuk mengaktifkan tutor AI, tambahkan AI_PROVIDER, AI_API_KEY, dan AI_MODEL di 
 export async function askMandarinTutor(request: TutorRequest): Promise<TutorResponse> {
   const provider = (process.env.AI_PROVIDER || "gemini").toLowerCase();
   const apiKey = process.env.AI_API_KEY;
-  // Accept either a bare Gemini model ID or a resource name such as "models/gemini-2.5-flash".
-  const configuredModel = (process.env.AI_MODEL || (provider === "openai" ? "gpt-4o-mini" : "gemini-2.5-flash")).trim();
-  const model = configuredModel.replace(/^models\\//, "").replace(/:generateContent$/, "");
+  // Accept either a bare Gemini model ID or a resource name such as "models/gemini-3.8-flash".
+  const configuredModel = (process.env.AI_MODEL || (provider === "openai" ? "gpt-4o-mini" : "gemini-3.8-flash")).trim();
+  const model = configuredModel.replace(/^models\//, "").replace(/:generateContent$/, "");
 
   // If no API key is provided, use high-quality offline tutor
   if (!apiKey) {

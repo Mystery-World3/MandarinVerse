@@ -132,7 +132,9 @@ Untuk mengaktifkan tutor AI, tambahkan AI_PROVIDER, AI_API_KEY, dan AI_MODEL di 
 export async function askMandarinTutor(request: TutorRequest): Promise<TutorResponse> {
   const provider = (process.env.AI_PROVIDER || "gemini").toLowerCase();
   const apiKey = process.env.AI_API_KEY;
-  const model = process.env.AI_MODEL || (provider === "openai" ? "gpt-4o-mini" : "gemini-3.8-flash");
+  // Accept either a bare Gemini model ID or a resource name such as "models/gemini-2.5-flash".
+  const configuredModel = (process.env.AI_MODEL || (provider === "openai" ? "gpt-4o-mini" : "gemini-2.5-flash")).trim();
+  const model = configuredModel.replace(/^models\\//, "").replace(/:generateContent$/, "");
 
   // If no API key is provided, use high-quality offline tutor
   if (!apiKey) {
@@ -168,21 +170,38 @@ export async function askMandarinTutor(request: TutorRequest): Promise<TutorResp
           parts: [{ text: item.content }],
         }));
 
-      const res = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
+      const requestBody = JSON.stringify({
+        systemInstruction: { parts: [{ text: systemPrompt }] },
+        contents: [
+          ...history,
+          { role: "user", parts: [{ text: request.message }] },
+        ],
+        generationConfig: { temperature: 0.4, maxOutputTokens: 1400 },
+      });
+
+      let activeModel = model;
+      let res = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${activeModel}:generateContent`,
         {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            systemInstruction: { parts: [{ text: systemPrompt }] },
-            contents: [
-              ...history,
-              { role: "user", parts: [{ text: request.message }] },
-            ],
-            generationConfig: { temperature: 0.4, maxOutputTokens: 1400 },
-          }),
+          headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
+          body: requestBody,
         }
       );
+
+      // If Vercel has an outdated/unsupported AI_MODEL value, retry once with a known fallback.
+      if (res.status === 404 && activeModel !== "gemini-2.5-flash") {
+        console.warn(`Gemini model "${activeModel}" returned 404; retrying with gemini-2.5-flash.`);
+        activeModel = "gemini-2.5-flash";
+        res = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/${activeModel}:generateContent`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
+            body: requestBody,
+          }
+        );
+      }
 
       if (!res.ok) {
         const errorText = await res.text();

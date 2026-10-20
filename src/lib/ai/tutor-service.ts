@@ -313,4 +313,5 @@ export async function askMandarinTutor(request: TutorRequest): Promise<TutorResp
       configured: true,
       error: err.message,
     };
+  }
 }

@@ -212,7 +212,6 @@ export async function completeLesson(
   timeSpentSeconds: number = 300
 ): Promise<{ success: boolean; isFirstCompletion: boolean; xpGained: number }> {
   const now = new Date().toISOString();
-  const xpGained = 50;
 
   if (isPostgresConfigured()) {
     try {
@@ -222,6 +221,7 @@ export async function completeLesson(
         [userId, lessonId]
       );
       const isFirstCompletion = existing.length === 0;
+      const xpGained = isFirstCompletion ? 50 : 0;
 
       await query(
         `INSERT INTO lesson_progress (id, user_id, lesson_id, is_completed, completed_at, score, time_spent_seconds, updated_at)
@@ -235,7 +235,14 @@ export async function completeLesson(
       );
 
       // Record study activity in Postgres
-      await recordActivityPg(userId, Math.round(timeSpentSeconds / 60), xpGained, 1, 0, now);
+      await recordActivityPg(
+        userId,
+        Math.max(1, Math.round(timeSpentSeconds / 60)),
+        xpGained,
+        isFirstCompletion ? 1 : 0,
+        0,
+        now
+      );
 
       // Auto-save vocabulary from this lesson
       const lessonData = await getLessonById(lessonId);
@@ -245,6 +252,7 @@ export async function completeLesson(
         }
       }
 
+      await checkAndAwardAchievementsPg(userId, now);
       return { success: true, isFirstCompletion, xpGained };
     } catch (e) {
       throw new Error(`Gagal menyimpan penyelesaian pelajaran: ${(e as Error).message}`);
@@ -278,7 +286,14 @@ export async function completeLesson(
     });
   }
 
-  recordActivity(userId, Math.round(timeSpentSeconds / 60), xpGained, 1, 0);
+  const xpGained = isFirstCompletion ? 50 : 0;
+  recordActivity(
+    userId,
+    Math.max(1, Math.round(timeSpentSeconds / 60)),
+    xpGained,
+    isFirstCompletion ? 1 : 0,
+    0
+  );
 
   const lessonData = await getLessonById(lessonId);
   if (lessonData?.lesson.content.vocabulary) {
@@ -381,6 +396,7 @@ export async function submitQuizAnswers(
         ]
       );
       await recordActivityPg(userId, 10, xpGained, 0, 1, attempt.completedAt);
+      await checkAndAwardAchievementsPg(userId, attempt.completedAt);
       return { attempt, questionResults };
     } catch (e) {
       throw new Error(`Gagal menyimpan hasil kuis: ${(e as Error).message}`);
@@ -801,7 +817,7 @@ export async function getUserDashboardData(userId: string): Promise<UserDashboar
 
       // User info from Better Auth user table
       const userRows = await query<any>(
-        `SELECT name, email, role, goal, daily_target_minutes as "dailyTargetMinutes", level 
+        `SELECT name, email, role, goal, "dailyTargetMinutes" as "dailyTargetMinutes", level
          FROM "user" WHERE id = $1`,
         [userId]
       );
@@ -939,6 +955,61 @@ export async function getUserDashboardData(userId: string): Promise<UserDashboar
     recentActivity: activities.slice(0, 7),
     achievements,
   };
+}
+
+/**
+ * Unlock achievements against PostgreSQL data. The unique constraint on
+ * (user_id, achievement_id) prevents duplicate awards across repeated actions.
+ */
+async function checkAndAwardAchievementsPg(userId: string, timestamp = new Date().toISOString()) {
+  const [lessonRows, quizRows, vocabRows, achievementRows, unlockedRows] = await Promise.all([
+    query<any>(
+      `SELECT COUNT(*)::int AS count FROM lesson_progress WHERE user_id = $1 AND is_completed = true`,
+      [userId]
+    ),
+    query<any>(
+      `SELECT COUNT(*)::int AS count FROM quiz_attempts WHERE user_id = $1 AND is_passed = true`,
+      [userId]
+    ),
+    query<any>(
+      `SELECT COUNT(*)::int AS count FROM user_vocabulary WHERE user_id = $1`,
+      [userId]
+    ),
+    query<any>(
+      `SELECT id, xp_reward AS "xpReward", condition_type AS "conditionType",
+              condition_threshold AS "conditionThreshold"
+       FROM achievements`
+    ),
+    query<any>(
+      `SELECT achievement_id AS "achievementId" FROM user_achievements WHERE user_id = $1`,
+      [userId]
+    ),
+  ]);
+
+  const counts: Record<string, number> = {
+    lessons: Number(lessonRows[0]?.count || 0),
+    quizzes: Number(quizRows[0]?.count || 0),
+    vocab: Number(vocabRows[0]?.count || 0),
+  };
+  const unlocked = new Set(unlockedRows.map((row: any) => row.achievementId));
+
+  for (const achievement of achievementRows) {
+    if (unlocked.has(achievement.id)) continue;
+    const current = counts[achievement.conditionType];
+    if (current === undefined || current < Number(achievement.conditionThreshold)) continue;
+
+    const inserted = await query<any>(
+      `INSERT INTO user_achievements (id, user_id, achievement_id, unlocked_at)
+       VALUES ($1, $2, $3, $4)
+       ON CONFLICT (user_id, achievement_id) DO NOTHING
+       RETURNING id`,
+      [`ua-${userId}-${achievement.id}`, userId, achievement.id, timestamp]
+    );
+
+    if (inserted.length > 0) {
+      await recordActivityPg(userId, 0, Number(achievement.xpReward || 0), 0, 0, timestamp);
+    }
+  }
 }
 
 async function checkAndAwardAchievements(userId: string) {

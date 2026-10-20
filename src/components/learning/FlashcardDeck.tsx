@@ -22,9 +22,12 @@ export function FlashcardDeck({ items, onReviewSubmit }: FlashcardDeckProps) {
   const currentItem = items[currentIndex];
   const vocab: VocabularyItem | undefined = currentItem?.vocabulary;
 
-  const handleRate = async (grade: ReviewGrade) => {
-    if (!currentItem || isSubmitting) return;
+  const submittingRef = React.useRef(false);
 
+  const handleRate = async (grade: ReviewGrade) => {
+    if (!currentItem || submittingRef.current) return;
+
+    submittingRef.current = true;
     setIsSubmitting(true);
     setReviewError("");
     try {
@@ -43,6 +46,7 @@ export function FlashcardDeck({ items, onReviewSubmit }: FlashcardDeckProps) {
     } catch (error) {
       setReviewError(error instanceof Error ? error.message : "Review gagal disimpan. Silakan coba lagi.");
     } finally {
+      submittingRef.current = false;
       setIsSubmitting(false);
     }
   };
@@ -50,6 +54,10 @@ export function FlashcardDeck({ items, onReviewSubmit }: FlashcardDeckProps) {
   // Keyboard shortcut support: Space to flip, 1/2/3/4 to rate
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement | null;
+      const isInteractive = !!target?.closest("button, a, input, textarea, select, [contenteditable='true']");
+      if (isInteractive) return;
+
       if (e.code === "Space") {
         e.preventDefault();
         setIsFlipped((prev) => !prev);
@@ -105,7 +113,11 @@ export function FlashcardDeck({ items, onReviewSubmit }: FlashcardDeckProps) {
 
       {/* 3D Flip Card Container */}
       <div
-        onClick={() => setIsFlipped(!isFlipped)}
+        onClick={(event) => {
+          const target = event.target as HTMLElement;
+          if (target.closest("button, a, input, textarea, select")) return;
+          setIsFlipped((prev) => !prev);
+        }}
         className="w-full min-h-[340px] sm:min-h-[380px] bg-white border border-slate-200/90 rounded-3xl p-8 shadow-sm hover:shadow-md transition-all cursor-pointer flex flex-col justify-between relative group select-none"
       >
         {/* Top bar on card */}

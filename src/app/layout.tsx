@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import ThemeToggle from "@/components/theme-toggle";
+import { AuthGate } from "@/components/auth/AuthGate";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -31,7 +32,7 @@ export default function RootLayout({
       suppressHydrationWarning
     >
       <body className="min-h-full flex flex-col bg-background text-foreground font-sans">
-        {children}
+        <AuthGate>{children}</AuthGate>
         <ThemeToggle />
       </body>
     </html>

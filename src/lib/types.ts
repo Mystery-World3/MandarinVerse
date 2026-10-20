@@ -197,6 +197,7 @@ export interface StudyActivity {
   lessonsCompleted: number;
   quizzesTaken: number;
   createdAt?: string;
+  timestamp?: string;
 }
 
 export interface Achievement {

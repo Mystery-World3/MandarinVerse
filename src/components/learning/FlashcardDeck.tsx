@@ -17,6 +17,7 @@ export function FlashcardDeck({ items, onReviewSubmit }: FlashcardDeckProps) {
   const [isFlipped, setIsFlipped] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [reviewedCount, setReviewedCount] = useState(0);
+  const [reviewError, setReviewError] = useState("");
 
   const currentItem = items[currentIndex];
   const vocab: VocabularyItem | undefined = currentItem?.vocabulary;
@@ -25,6 +26,7 @@ export function FlashcardDeck({ items, onReviewSubmit }: FlashcardDeckProps) {
     if (!currentItem || isSubmitting) return;
 
     setIsSubmitting(true);
+    setReviewError("");
     try {
       await onReviewSubmit(currentItem.vocabularyId, grade);
       setReviewedCount((prev) => prev + 1);
@@ -38,6 +40,8 @@ export function FlashcardDeck({ items, onReviewSubmit }: FlashcardDeckProps) {
           origin: { y: 0.6 },
         });
       }
+    } catch (error) {
+      setReviewError(error instanceof Error ? error.message : "Review gagal disimpan. Silakan coba lagi.");
     } finally {
       setIsSubmitting(false);
     }
@@ -170,6 +174,12 @@ export function FlashcardDeck({ items, onReviewSubmit }: FlashcardDeckProps) {
           )}
         </div>
       </div>
+
+      {reviewError && (
+        <p role="alert" className="rounded-xl border border-rose-300 bg-rose-50 px-4 py-3 text-sm font-medium text-rose-800">
+          {reviewError}
+        </p>
+      )}
 
       {/* Rating Buttons (Revealed when card is flipped) */}
       {isFlipped && (

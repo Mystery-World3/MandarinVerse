@@ -38,6 +38,8 @@ export default function LessonPlayerClient({ courseId, lessonId }: LessonPlayerC
   const [activeTab, setActiveTab] = useState<"intro" | "hanzi" | "vocab" | "grammar" | "dialogue" | "summary">("intro");
   const [isCompleting, setIsCompleting] = useState(false);
   const [isCompleted, setIsCompleted] = useState(false);
+  const [completionError, setCompletionError] = useState("");
+  const [xpEarned, setXpEarned] = useState(0);
   const [timeSpent, setTimeSpent] = useState(0);
 
   // Track time spent
@@ -67,7 +69,9 @@ export default function LessonPlayerClient({ courseId, lessonId }: LessonPlayerC
   }, [lessonId]);
 
   const handleComplete = async () => {
+    if (isCompleting || isCompleted) return;
     setIsCompleting(true);
+    setCompletionError("");
     try {
       const res = await fetch(`/api/lessons/${lessonId}/complete`, {
         method: "POST",
@@ -75,17 +79,21 @@ export default function LessonPlayerClient({ courseId, lessonId }: LessonPlayerC
         body: JSON.stringify({ timeSpentSeconds: Math.max(timeSpent, 60) }),
       });
 
-      const data = await res.json();
-      if (data.success) {
-        setIsCompleted(true);
-        confetti({
-          particleCount: 100,
-          spread: 70,
-          origin: { y: 0.6 },
-        });
+      const data = await res.json().catch(() => null);
+      if (!res.ok || !data?.success) {
+        throw new Error(data?.error || "Progress belajar gagal disimpan. Silakan coba lagi.");
       }
+
+      setIsCompleted(true);
+      setXpEarned(Number(data.xpGained || 0));
+      confetti({
+        particleCount: 100,
+        spread: 70,
+        origin: { y: 0.6 },
+      });
     } catch (err) {
       console.error("Complete error:", err);
+      setCompletionError(err instanceof Error ? err.message : "Terjadi kesalahan saat menyimpan progres.");
     } finally {
       setIsCompleting(false);
     }
@@ -515,10 +523,16 @@ export default function LessonPlayerClient({ courseId, lessonId }: LessonPlayerC
                 </h4>
                 <p className="text-xs sm:text-sm text-teal-800 mt-1 max-w-md mx-auto">
                   {isCompleted
-                    ? "Pencapaian tersimpan di database! Anda memperoleh 50 XP dan kosakata telah ditambahkan ke sistem Spaced Repetition."
-                    : "Selesaikan pelajaran ini untuk mencatat progress Anda ke database dan menambahkan kosakata ke flashcard harian."}
+                    ? `Progres berhasil disimpan! ${xpEarned > 0 ? `Anda memperoleh ${xpEarned} XP.` : "Pelajaran ini sebelumnya sudah selesai, jadi XP tidak dihitung ulang."} Kosakata pelajaran telah disinkronkan ke sistem Spaced Repetition.`
+                    : "Selesaikan pelajaran ini untuk menyimpan progres ke database dan menambahkan kosakata ke flashcard harian."}
                 </p>
               </div>
+
+              {completionError && (
+                <p role="alert" className="mx-auto max-w-lg rounded-xl border border-rose-300 bg-rose-50 px-4 py-3 text-sm font-medium text-rose-800">
+                  {completionError}
+                </p>
+              )}
 
               {!isCompleted ? (
                 <Button
@@ -529,7 +543,7 @@ export default function LessonPlayerClient({ courseId, lessonId }: LessonPlayerC
                   className="font-bold shadow-md"
                 >
                   <CheckCircle2 className="w-4 h-4 mr-1.5" />
-                  <span>Selesaikan Pelajaran (+50 XP)</span>
+                  <span>Selesaikan Pelajaran</span>
                 </Button>
               ) : (
                 <div className="flex flex-col sm:flex-row gap-3 justify-center pt-2">

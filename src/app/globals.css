@@ -227,3 +227,24 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .motion-safe\\:animate-\\[fade-up_500ms_ease-out_both\\] { animation: none !important; }
 }
+
+
+/* Accessibility: keep keyboard focus clearly visible in both themes. */
+:where(a, button, input, textarea, select):focus-visible {
+  outline: 3px solid #0f766e;
+  outline-offset: 3px;
+}
+.dark :where(a, button, input, textarea, select):focus-visible {
+  outline-color: #5eead4;
+}
+
+/* Placeholder text must remain readable in both themes. */
+input::placeholder,
+textarea::placeholder {
+  color: #64748b;
+  opacity: 1;
+}
+.dark input::placeholder,
+.dark textarea::placeholder {
+  color: #a8b5c7 !important;
+}

@@ -199,7 +199,7 @@ export function FlashcardDeck({ items, onReviewSubmit }: FlashcardDeckProps) {
           <button
             type="button"
             disabled={isSubmitting}
-            onClick={() => handleRate("again")}
+            onClick={(event) => { event.stopPropagation(); void handleRate("again"); }}
             className="flex flex-col items-center justify-center p-3 rounded-2xl border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-800 transition-all active:scale-95 cursor-pointer"
           >
             <span className="text-sm font-bold">Lupa</span>
@@ -209,7 +209,7 @@ export function FlashcardDeck({ items, onReviewSubmit }: FlashcardDeckProps) {
           <button
             type="button"
             disabled={isSubmitting}
-            onClick={() => handleRate("hard")}
+            onClick={(event) => { event.stopPropagation(); void handleRate("hard"); }}
             className="flex flex-col items-center justify-center p-3 rounded-2xl border border-amber-200 bg-amber-50 hover:bg-amber-100 text-amber-800 transition-all active:scale-95 cursor-pointer"
           >
             <span className="text-sm font-bold">Sulit</span>
@@ -219,7 +219,7 @@ export function FlashcardDeck({ items, onReviewSubmit }: FlashcardDeckProps) {
           <button
             type="button"
             disabled={isSubmitting}
-            onClick={() => handleRate("good")}
+            onClick={(event) => { event.stopPropagation(); void handleRate("good"); }}
             className="flex flex-col items-center justify-center p-3 rounded-2xl border border-teal-200 bg-teal-50 hover:bg-teal-100 text-teal-800 transition-all active:scale-95 cursor-pointer"
           >
             <span className="text-sm font-bold">Baik</span>
@@ -229,7 +229,7 @@ export function FlashcardDeck({ items, onReviewSubmit }: FlashcardDeckProps) {
           <button
             type="button"
             disabled={isSubmitting}
-            onClick={() => handleRate("easy")}
+            onClick={(event) => { event.stopPropagation(); void handleRate("easy"); }}
             className="flex flex-col items-center justify-center p-3 rounded-2xl border border-emerald-200 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 transition-all active:scale-95 cursor-pointer"
           >
             <span className="text-sm font-bold">Mudah</span>

@@ -20,18 +20,28 @@ import { Button } from "@/components/ui/Button";
 
 export default function CourseDetailClient({ courseId }: { courseId: string }) {
   const [course, setCourse] = useState<Course | null>(null);
+  const [completedLessonIds, setCompletedLessonIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function loadCourse() {
       try {
-        const res = await fetch("/api/courses");
-        const data = await res.json();
+        const [coursesRes, progressRes] = await Promise.all([
+          fetch("/api/courses"),
+          fetch("/api/user/lesson-progress"),
+        ]);
+        const [data, progressData] = await Promise.all([
+          coursesRes.json(),
+          progressRes.json().catch(() => null),
+        ]);
         if (data.success) {
           const found = (data.courses as Course[]).find(
             (c) => c.id === courseId || c.slug === courseId
           );
           setCourse(found || null);
+        }
+        if (progressRes.ok && progressData?.success) {
+          setCompletedLessonIds(new Set(progressData.progress.map((item: { lessonId: string }) => item.lessonId)));
         }
       } catch (err) {
         console.error("Failed to load course:", err);
@@ -71,6 +81,11 @@ export default function CourseDetailClient({ courseId }: { courseId: string }) {
   }
 
   const units = course.units || [];
+  const lessonsInCourse = units.flatMap((unit) => unit.lessons || []);
+  const completedInCourse = lessonsInCourse.filter((lesson) => completedLessonIds.has(lesson.id)).length;
+  const courseProgress = lessonsInCourse.length
+    ? Math.round((completedInCourse / lessonsInCourse.length) * 100)
+    : 0;
 
   return (
     <div className="min-h-screen flex flex-col bg-slate-50 text-slate-950">
@@ -109,6 +124,15 @@ export default function CourseDetailClient({ courseId }: { courseId: string }) {
           <p className="text-sm text-slate-600 leading-relaxed max-w-2xl">
             {course.description}
           </p>
+          <div className="pt-2 space-y-2">
+            <div className="flex items-center justify-between text-xs font-semibold text-slate-700">
+              <span>Progres jalur belajar</span>
+              <span>{completedInCourse}/{lessonsInCourse.length} pelajaran · {courseProgress}%</span>
+            </div>
+            <div className="h-2.5 rounded-full bg-slate-100 overflow-hidden">
+              <div className="h-full rounded-full bg-teal-700 transition-all duration-500" style={{ width: `${courseProgress}%` }} />
+            </div>
+          </div>
         </div>
 
         {/* Units & Lessons Syllabus */}
@@ -148,10 +172,15 @@ export default function CourseDetailClient({ courseId }: { courseId: string }) {
                           {lIdx + 1}
                         </span>
                         <div>
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-2 flex-wrap">
                             <h4 className="text-sm font-bold text-slate-900 group-hover:text-teal-700 transition-colors">
                               {lesson.title}
                             </h4>
+                            {completedLessonIds.has(lesson.id) && (
+                              <span className="inline-flex items-center gap-1 rounded-full border border-emerald-300 bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-800">
+                                <CheckCircle2 className="h-3 w-3" /> Selesai
+                              </span>
+                            )}
                             <span className="font-serif text-teal-800 text-xs hidden sm:inline">
                               {lesson.titleChinese}
                             </span>
@@ -168,8 +197,8 @@ export default function CourseDetailClient({ courseId }: { courseId: string }) {
 
                         <Link href={`/courses/${course.id}/lessons/${lesson.id}`}>
                           <Button size="sm" variant="primary" className="gap-1 text-xs">
-                            <Play className="w-3 h-3 fill-white" />
-                            <span>Mulai</span>
+                            {completedLessonIds.has(lesson.id) ? <CheckCircle2 className="w-3 h-3" /> : <Play className="w-3 h-3 fill-white" />}
+                            <span>{completedLessonIds.has(lesson.id) ? "Pelajari Lagi" : "Mulai"}</span>
                           </Button>
                         </Link>
                       </div>

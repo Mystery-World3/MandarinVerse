@@ -669,12 +669,12 @@ async function recordActivityPg(
   const today = timestamp.split("T")[0];
   await query(
     `INSERT INTO study_activities (id, user_id, date, minutes_spent, xp_gained, lessons_completed, quizzes_taken, created_at)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $3)
+     VALUES ($1, $2, $3::date, $4, $5, $6, $7, $8::timestamptz)
      ON CONFLICT (user_id, date) DO UPDATE SET
-       minutes_spent = study_activities.minutes_spent + $4,
-       xp_gained = study_activities.xp_gained + $5,
-       lessons_completed = study_activities.lessons_completed + $6,
-       quizzes_taken = study_activities.quizzes_taken + $7`,
+       minutes_spent = study_activities.minutes_spent + EXCLUDED.minutes_spent,
+       xp_gained = study_activities.xp_gained + EXCLUDED.xp_gained,
+       lessons_completed = study_activities.lessons_completed + EXCLUDED.lessons_completed,
+       quizzes_taken = study_activities.quizzes_taken + EXCLUDED.quizzes_taken`,
     [
       `act-${Date.now()}`,
       userId,
@@ -683,6 +683,7 @@ async function recordActivityPg(
       xpGained,
       lessonsCompleted,
       quizzesTaken,
+      timestamp,
     ]
   );
 }

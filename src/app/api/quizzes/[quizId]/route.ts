@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getCurrentUser } from "@/lib/session";
 import { getQuizById } from "@/lib/db/repository";
 
 export async function GET(

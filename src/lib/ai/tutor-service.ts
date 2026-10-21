@@ -387,6 +387,13 @@ export async function askMandarinTutor(request: TutorRequest): Promise<TutorResp
     }
   } catch (err: any) {
     console.error("AI Tutor unexpected error:", err);
+
+    // Network errors can also indicate a temporary primary-provider outage.
+    if (provider === "gemini") {
+      const backup = await askConfiguredBackup(request, systemPrompt);
+      if (backup) return backup;
+    }
+
     return {
       reply: "Tutor AI sementara tidak dapat dihubungi karena kendala jaringan. Pertanyaan lu belum berhasil diproses. Coba lagi beberapa saat.",
       source: "fallback",

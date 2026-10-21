@@ -129,6 +129,78 @@ Berikut frasa praktis yang bisa langsung Anda gunakan:
 Untuk mengaktifkan tutor AI, tambahkan AI_PROVIDER, AI_API_KEY, dan AI_MODEL di Environment Variables Vercel, lalu redeploy. Sementara itu, coba tanyakan tentang nada Mandarin, salam, perkenalan, angka, atau waktu yang sudah didukung oleh panduan dasar.`;
 }
 
+
+/**
+ * Try a separately configured OpenAI-compatible backup provider.
+ * Secrets are read only from server-side environment variables.
+ */
+async function askConfiguredBackup(
+  request: TutorRequest,
+  systemPrompt: string,
+): Promise<TutorResponse | null> {
+  const provider = (process.env.AI_FALLBACK_PROVIDER || "").toLowerCase().trim();
+  const apiKey = process.env.AI_FALLBACK_API_KEY;
+  const model = (process.env.AI_FALLBACK_MODEL || "").trim();
+
+  if (!provider || !apiKey || !model) return null;
+  if (!["openai", "groq", "openrouter"].includes(provider)) {
+    console.error("AI_FALLBACK_PROVIDER must be openai, groq, or openrouter.");
+    return null;
+  }
+
+  const endpoint =
+    provider === "groq"
+      ? "https://api.groq.com/openai/v1/chat/completions"
+      : provider === "openrouter"
+      ? "https://openrouter.ai/api/v1/chat/completions"
+      : "https://api.openai.com/v1/chat/completions";
+
+  const messages = [
+    { role: "system", content: systemPrompt },
+    ...(request.conversationHistory || [])
+      .filter((item) => item.role !== "system" && item.content.trim())
+      .slice(-8)
+      .map((item) => ({
+        role: item.role as "user" | "assistant",
+        content: item.content,
+      })),
+    { role: "user", content: request.message },
+  ];
+
+  try {
+    const response = await fetch(endpoint, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({ model, messages, temperature: 0.4, max_tokens: 1000 }),
+    });
+
+    if (!response.ok) {
+      console.error(`Backup AI provider ${provider} failed with HTTP ${response.status}.`);
+      return null;
+    }
+
+    const data = await response.json();
+    const reply = data.choices?.[0]?.message?.content;
+    if (typeof reply !== "string" || !reply.trim()) {
+      console.error(`Backup AI provider ${provider} returned an empty response.`);
+      return null;
+    }
+
+    return {
+      reply,
+      source: "ai",
+      provider: `${provider.toUpperCase()} (backup)`,
+      configured: true,
+    };
+  } catch (error) {
+    console.error("Backup AI provider request failed:", error);
+    return null;
+  }
+}
+
 export async function askMandarinTutor(request: TutorRequest): Promise<TutorResponse> {
   const provider = (process.env.AI_PROVIDER || "gemini").toLowerCase();
   const apiKey = process.env.AI_API_KEY;
@@ -222,20 +294,28 @@ export async function askMandarinTutor(request: TutorRequest): Promise<TutorResp
       }
 
       if (!res.ok) {
+        const status = res.status;
         const errorText = await res.text();
         console.error("Gemini API error:", errorText);
 
-        const reply = res.status === 503 || res.status === 429
+        // Switch to the configured backup only after Gemini's bounded retries.
+        // Avoid masking permanent configuration/authentication errors with another provider.
+        if ([429, 500, 502, 503, 504].includes(status)) {
+          const backup = await askConfiguredBackup(request, systemPrompt);
+          if (backup) return backup;
+        }
+
+        const reply = status === 503 || status === 429
           ? "Tutor AI sedang sibuk karena permintaan ke layanan AI sedang tinggi. Pertanyaan lu belum berhasil diproses. Coba kirim ulang beberapa saat lagi."
-          : res.status === 404
+          : status === 404
           ? "Model AI yang dikonfigurasi tidak tersedia (HTTP 404). Administrator perlu memeriksa AI_MODEL di Environment Variables Vercel."
-          : `Tutor AI belum bisa memproses pertanyaan ini (HTTP ${res.status}). Coba lagi sebentar. Jika berulang, administrator perlu memeriksa konfigurasi AI di Vercel.`;
+          : `Tutor AI belum bisa memproses pertanyaan ini (HTTP ${status}). Coba lagi sebentar. Jika berulang, administrator perlu memeriksa konfigurasi AI di Vercel.`;
 
         return {
           reply,
           source: "fallback",
           configured: true,
-          error: `API Status ${res.status}`,
+          error: `API Status ${status}`,
         };
       }
 

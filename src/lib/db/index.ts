@@ -17,6 +17,6 @@ export async function query<T = any>(text: string, params: any[] = []): Promise<
   if (!sql) {
     throw new Error("DATABASE_URL belum dikonfigurasi.");
   }
-  const res = await sql(text, params);
+  const res = await (sql as any)(text, params);
   return res as unknown as T[];
 }

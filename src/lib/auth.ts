@@ -1,11 +1,9 @@
 import { betterAuth } from "better-auth";
 import { admin } from "better-auth/plugins";
-import { Pool } from "@neondatabase/serverless";
+import { neon } from "@neondatabase/serverless";
 import { isPostgresConfigured } from "./db";
 import { sendTransactionalEmail, sendWelcomeEmail } from "./email";
 
-// In production, BETTER_AUTH_SECRET must be a long random string.
-// Generate one with: openssl rand -base64 32
 if (process.env.NODE_ENV === "production" && !process.env.BETTER_AUTH_SECRET) {
   throw new Error(
     "BETTER_AUTH_SECRET belum diatur. Hasilkan nilai acak minimal 32 karakter dan tambahkan ke environment variables produksi."
@@ -14,7 +12,6 @@ if (process.env.NODE_ENV === "production" && !process.env.BETTER_AUTH_SECRET) {
 
 const secret =
   process.env.BETTER_AUTH_SECRET ||
-  // Only used in development / CI when the variable is not set
   "dev-only-secret-DO-NOT-USE-IN-PRODUCTION-replace-me";
 
 const baseURL =
@@ -22,22 +19,21 @@ const baseURL =
   process.env.NEXT_PUBLIC_APP_URL ||
   "http://localhost:3000";
 
+const dbClient = isPostgresConfigured() ? neon(process.env.DATABASE_URL!) : undefined;
+
 export const auth = betterAuth({
   secret,
   baseURL,
   trustedOrigins: [
-    "https://mandarin-verse.vercel.app",
-    "https://mandarinverse-kohl.vercel.app",
+    "https://mandarinverse.mmuflih.my.id", 
     "http://localhost:3000",
     "http://localhost:3001",
   ],
 
-  ...(isPostgresConfigured()
+  ...(dbClient
     ? {
-      database: new Pool({
-        connectionString: process.env.DATABASE_URL,
-      }),
-    }
+        database: dbClient,
+      }
     : {}),
   emailAndPassword: {
     enabled: true,
@@ -65,7 +61,6 @@ export const auth = betterAuth({
           try {
             await sendWelcomeEmail(user.name || "Pembelajar", user.email);
           } catch (error) {
-            // A welcome-email failure must not undo account creation.
             console.error("Welcome email could not be sent:", error);
           }
         },
@@ -77,8 +72,6 @@ export const auth = betterAuth({
       role: {
         type: "string",
         defaultValue: "learner",
-        // Role must NEVER be settable by the user themselves.
-        // It is set server-side only via the db:make-admin script.
         input: false,
       },
       goal: {

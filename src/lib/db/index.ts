@@ -19,4 +19,5 @@ export async function query<T = any>(text: string, params: any[] = []): Promise<
   }
   const res = await (sql as any)(text, params);
   return res as unknown as T[];
+  
 }

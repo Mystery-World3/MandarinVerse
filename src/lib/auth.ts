@@ -1,6 +1,5 @@
 import { betterAuth } from "better-auth";
 import { admin } from "better-auth/plugins";
-import { neon } from "@neondatabase/serverless";
 import { isPostgresConfigured } from "./db";
 import { sendTransactionalEmail, sendWelcomeEmail } from "./email";
 
@@ -20,8 +19,6 @@ const baseURL =
   "http://localhost:3000";
 
 export function getAuth() {
-  const dbClient = isPostgresConfigured() ? neon(process.env.DATABASE_URL!) : undefined;
-
   return betterAuth({
     secret,
     baseURL,
@@ -30,11 +27,6 @@ export function getAuth() {
       "http://localhost:3000",
       "http://localhost:3001",
     ],
-    ...(dbClient
-      ? {
-          database: dbClient,
-        }
-      : {}),
     emailAndPassword: {
       enabled: true,
       autoSignIn: true,

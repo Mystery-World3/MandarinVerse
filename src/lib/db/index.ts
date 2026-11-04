@@ -1,15 +1,25 @@
 import { neon } from "@neondatabase/serverless";
+import { getCloudflareContext } from "@opennextjs/cloudflare";
+
+function getDatabaseUrl(): string | undefined {
+  try {
+    const { env } = getCloudflareContext();
+    return env.DATABASE_URL;
+  } catch {
+    return process.env.DATABASE_URL;
+  }
+}
 
 export function isPostgresConfigured(): boolean {
-  return Boolean(process.env.DATABASE_URL && process.env.DATABASE_URL.startsWith("postgres"));
+  const url = getDatabaseUrl();
+  return Boolean(url && url.startsWith("postgres"));
 }
 
 export function getDbClient() {
   if (!isPostgresConfigured()) {
     return null;
   }
-  // Di Edge, kita gunakan HTTP call (neon) bukan Pool
-  return neon(process.env.DATABASE_URL!);
+  return neon(getDatabaseUrl()!);
 }
 
 export async function query<T = any>(text: string, params: any[] = []): Promise<T[]> {
@@ -19,5 +29,4 @@ export async function query<T = any>(text: string, params: any[] = []): Promise<
   }
   const res = await (sql as any)(text, params);
   return res as unknown as T[];
-  
 }

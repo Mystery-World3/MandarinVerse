@@ -1,5 +1,3 @@
-export const dynamic = 'force-dynamic';
-
 import { NextResponse } from "next/server";
 import { getUserDashboardData } from "@/lib/db/repository";
 import { getCurrentUser } from "@/lib/session";

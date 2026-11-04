@@ -4,7 +4,7 @@ import { getCloudflareContext } from "@opennextjs/cloudflare";
 function getDatabaseUrl(): string | undefined {
   try {
     const { env } = getCloudflareContext();
-    return env.DATABASE_URL;
+    return (env as any).DATABASE_URL;
   } catch {
     return process.env.DATABASE_URL;
   }

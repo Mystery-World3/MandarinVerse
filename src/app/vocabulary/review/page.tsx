@@ -38,11 +38,16 @@ export default function VocabularyReviewPage() {
   }, []);
 
   const handleReviewSubmit = async (vocabularyId: string, grade: ReviewGrade) => {
-    await fetch("/api/vocabulary/review", {
+    const res = await fetch("/api/vocabulary/review", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ vocabularyId, grade }),
     });
+    const result = await res.json().catch(() => null);
+
+    if (!res.ok || !result?.success) {
+      throw new Error(result?.error || "Review gagal disimpan ke database. Silakan coba lagi.");
+    }
   };
 
   return (

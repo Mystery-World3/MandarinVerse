@@ -1,10 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getCurrentUser } from "@/lib/session";
 import { getLessonById } from "@/lib/db/repository";
 
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ lessonId: string }> }
 ) {
+  const user = await getCurrentUser();
+  if (!user) return NextResponse.json({ success: false, error: "Silakan masuk untuk melihat materi belajar." }, { status: 401 });
   try {
     const { lessonId } = await params;
     const data = await getLessonById(lessonId);

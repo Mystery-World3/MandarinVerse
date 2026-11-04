@@ -174,7 +174,7 @@ export default function ProgressPage() {
                 <table className="w-full text-left text-xs text-slate-600">
                   <thead className="bg-slate-50 border-b border-slate-200 text-slate-700 font-semibold uppercase text-[10px] tracking-wider">
                     <tr>
-                      <th className="px-6 py-3.5">Tanggal</th>
+                      <th className="px-6 py-3.5">Tanggal &amp; Waktu</th>
                       <th className="px-6 py-3.5">Waktu Belajar</th>
                       <th className="px-6 py-3.5">Pelajaran Selesai</th>
                       <th className="px-6 py-3.5">Kuis Diambil</th>
@@ -184,7 +184,13 @@ export default function ProgressPage() {
                   <tbody className="divide-y divide-slate-100">
                     {activities.map((act) => (
                       <tr key={act.id} className="hover:bg-slate-50/50 transition-colors">
-                        <td className="px-6 py-4 font-semibold text-slate-900">{act.date}</td>
+                        <td className="px-6 py-4 font-semibold text-slate-900 whitespace-nowrap">
+                          {new Date(act.timestamp || act.createdAt || act.date).toLocaleString("id-ID", {
+                            timeZone: "Asia/Jakarta",
+                            dateStyle: "medium",
+                            timeStyle: "short",
+                          })}
+                        </td>
                         <td className="px-6 py-4">{act.minutesSpent} menit</td>
                         <td className="px-6 py-4">{act.lessonsCompleted}</td>
                         <td className="px-6 py-4">{act.quizzesTaken}</td>

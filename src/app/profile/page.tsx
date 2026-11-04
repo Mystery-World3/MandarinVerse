@@ -4,6 +4,7 @@ import React, { useEffect, useState } from "react";
 import {
   Download,
   LogOut,
+  Trash2,
   Mail,
   Save,
   Shield,
@@ -23,6 +24,9 @@ export default function ProfilePage() {
   const [goal, setGoal] = useState<string | null>(null);
   const [dailyMinutes, setDailyMinutes] = useState<number | null>(null);
   const [isSaved, setIsSaved] = useState(false);
+  const [deleteConfirmation, setDeleteConfirmation] = useState("");
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState("");
 
   const currentName = name !== null ? name : user?.name || "";
   const currentGoal =
@@ -105,6 +109,54 @@ export default function ProfilePage() {
                   <span>Keluar dari Akun</span>
                 </Button>
               </div>
+            </div>
+
+            {/* Account deletion */}
+            <div className="bg-white border border-rose-200 rounded-3xl p-5 space-y-3 shadow-xs text-xs">
+              <div className="flex items-center gap-2 font-bold text-rose-700">
+                <Trash2 className="w-4 h-4" />
+                <span>Zona Berbahaya</span>
+              </div>
+              <p className="leading-relaxed text-slate-600">
+                Menghapus akun akan menghapus profil dan data belajar terkait secara permanen. Tindakan ini tidak dapat dibatalkan.
+              </p>
+              <label htmlFor="delete-account-confirmation" className="block font-semibold text-slate-700">
+                Ketik HAPUS AKUN untuk melanjutkan
+              </label>
+              <input
+                id="delete-account-confirmation"
+                type="text"
+                value={deleteConfirmation}
+                onChange={(e) => { setDeleteConfirmation(e.target.value); setDeleteError(""); }}
+                placeholder="HAPUS AKUN"
+                className="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm text-slate-900 bg-white focus:outline-none focus:ring-2 focus:ring-rose-400"
+                autoComplete="off"
+              />
+              {deleteError && <p role="alert" className="text-rose-700">{deleteError}</p>}
+              <button
+                type="button"
+                disabled={deleteConfirmation !== "HAPUS AKUN" || isDeleting}
+                onClick={async () => {
+                  if (deleteConfirmation !== "HAPUS AKUN" || isDeleting) return;
+                  const confirmed = window.confirm("Yakin ingin menghapus akun MandarinVerse secara permanen? Data belajar terkait juga akan dihapus.");
+                  if (!confirmed) return;
+                  setIsDeleting(true);
+                  setDeleteError("");
+                  try {
+                    const response = await fetch("/api/account/delete", { method: "DELETE" });
+                    const result = await response.json();
+                    if (!response.ok || !result.success) throw new Error(result.error || "Gagal menghapus akun.");
+                    await signOut();
+                    window.location.href = "/";
+                  } catch (error) {
+                    setDeleteError(error instanceof Error ? error.message : "Gagal menghapus akun. Silakan coba lagi.");
+                    setIsDeleting(false);
+                  }
+                }}
+                className="w-full py-2 px-3 rounded-xl border border-rose-300 bg-rose-50 text-rose-700 hover:bg-rose-100 font-semibold transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                {isDeleting ? "Menghapus akun..." : "Hapus Akun Saya"}
+              </button>
             </div>
 
             {/* Privacy & Data Management */}

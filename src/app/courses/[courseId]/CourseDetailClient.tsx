@@ -20,18 +20,28 @@ import { Button } from "@/components/ui/Button";
 
 export default function CourseDetailClient({ courseId }: { courseId: string }) {
   const [course, setCourse] = useState<Course | null>(null);
+  const [completedLessonIds, setCompletedLessonIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function loadCourse() {
       try {
-        const res = await fetch("/api/courses");
-        const data = await res.json();
+        const [coursesRes, progressRes] = await Promise.all([
+          fetch("/api/courses"),
+          fetch("/api/user/lesson-progress"),
+        ]);
+        const [data, progressData] = await Promise.all([
+          coursesRes.json(),
+          progressRes.json().catch(() => null),
+        ]);
         if (data.success) {
           const found = (data.courses as Course[]).find(
             (c) => c.id === courseId || c.slug === courseId
           );
           setCourse(found || null);
+        }
+        if (progressRes.ok && progressData?.success) {
+          setCompletedLessonIds(new Set(progressData.progress.map((item: { lessonId: string }) => item.lessonId)));
         }
       } catch (err) {
         console.error("Failed to load course:", err);
@@ -44,7 +54,7 @@ export default function CourseDetailClient({ courseId }: { courseId: string }) {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex flex-col bg-[#fbfbfa]">
+      <div className="min-h-screen flex flex-col bg-slate-50">
         <Navbar />
         <div className="flex-1 flex items-center justify-center">
           <div className="w-8 h-8 border-3 border-teal-700 border-t-transparent rounded-full animate-spin" />
@@ -71,23 +81,28 @@ export default function CourseDetailClient({ courseId }: { courseId: string }) {
   }
 
   const units = course.units || [];
+  const lessonsInCourse = units.flatMap((unit) => unit.lessons || []);
+  const completedInCourse = lessonsInCourse.filter((lesson) => completedLessonIds.has(lesson.id)).length;
+  const courseProgress = lessonsInCourse.length
+    ? Math.round((completedInCourse / lessonsInCourse.length) * 100)
+    : 0;
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#fbfbfa] text-slate-900">
+    <div className="min-h-screen flex flex-col bg-slate-50 text-slate-950">
       <Navbar />
 
       <main className="flex-1 max-w-5xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-10 space-y-8">
         {/* Navigation Breadcrumb */}
         <Link
           href="/courses"
-          className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-600 hover:text-teal-700 transition-colors"
+          className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-700 hover:text-teal-800 transition-colors"
         >
           <ArrowLeft className="w-3.5 h-3.5" />
           <span>Kembali ke Semua Jalur Belajar</span>
         </Link>
 
         {/* Course Header Banner */}
-        <div className="bg-white border border-slate-200/90 rounded-3xl p-6 sm:p-8 shadow-xs space-y-4">
+        <div className="bg-white border border-slate-300 rounded-3xl p-6 sm:p-8 shadow-sm space-y-4">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div className="flex items-center gap-2">
               <span className="w-8 h-8 rounded-xl bg-teal-800 text-white flex items-center justify-center font-bold text-xs">
@@ -109,6 +124,15 @@ export default function CourseDetailClient({ courseId }: { courseId: string }) {
           <p className="text-sm text-slate-600 leading-relaxed max-w-2xl">
             {course.description}
           </p>
+          <div className="pt-2 space-y-2">
+            <div className="flex items-center justify-between text-xs font-semibold text-slate-700">
+              <span>Progres jalur belajar</span>
+              <span>{completedInCourse}/{lessonsInCourse.length} pelajaran · {courseProgress}%</span>
+            </div>
+            <div className="h-2.5 rounded-full bg-slate-100 overflow-hidden">
+              <div className="h-full rounded-full bg-teal-700 transition-all duration-500" style={{ width: `${courseProgress}%` }} />
+            </div>
+          </div>
         </div>
 
         {/* Units & Lessons Syllabus */}
@@ -121,15 +145,15 @@ export default function CourseDetailClient({ courseId }: { courseId: string }) {
             {units.map((unit, uIdx) => (
               <div
                 key={unit.id}
-                className="bg-white border border-slate-200 rounded-3xl p-6 shadow-xs space-y-5"
+                className="bg-white border border-slate-300 rounded-3xl p-6 shadow-sm space-y-5 motion-safe:animate-[fade-up_500ms_ease-out_both]"
               >
                 <div className="flex items-start justify-between gap-4 pb-4 border-b border-slate-100">
                   <div>
-                    <span className="text-[11px] font-bold text-slate-600 uppercase tracking-wider">
+                    <span className="text-[11px] font-bold text-slate-700 uppercase tracking-wider">
                       Unit {uIdx + 1}
                     </span>
                     <h3 className="text-lg font-bold text-slate-900 mt-0.5">{unit.title}</h3>
-                    <p className="text-xs text-slate-600 mt-0.5">{unit.description}</p>
+                    <p className="text-xs text-slate-700 mt-0.5">{unit.description}</p>
                   </div>
                   <span className="font-serif text-teal-800 text-sm font-semibold shrink-0">
                     {unit.titleChinese}
@@ -141,18 +165,23 @@ export default function CourseDetailClient({ courseId }: { courseId: string }) {
                   {(unit.lessons || []).map((lesson, lIdx) => (
                     <div
                       key={lesson.id}
-                      className="p-4 rounded-2xl bg-slate-50/70 hover:bg-teal-50/40 border border-slate-200/80 hover:border-teal-300 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3 group"
+                      className="p-4 rounded-2xl bg-sky-50 hover:bg-sky-100 border border-sky-300 hover:border-teal-600 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md flex flex-col sm:flex-row sm:items-center justify-between gap-3 group"
                     >
                       <div className="flex items-start gap-3">
                         <span className="w-7 h-7 rounded-lg bg-teal-100 text-teal-800 flex items-center justify-center font-bold text-xs shrink-0 mt-0.5">
                           {lIdx + 1}
                         </span>
                         <div>
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-2 flex-wrap">
                             <h4 className="text-sm font-bold text-slate-900 group-hover:text-teal-700 transition-colors">
                               {lesson.title}
                             </h4>
-                            <span className="font-serif text-teal-700 text-xs hidden sm:inline">
+                            {completedLessonIds.has(lesson.id) && (
+                              <span className="inline-flex items-center gap-1 rounded-full border border-emerald-300 bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-800">
+                                <CheckCircle2 className="h-3 w-3" /> Selesai
+                              </span>
+                            )}
+                            <span className="font-serif text-teal-800 text-xs hidden sm:inline">
                               {lesson.titleChinese}
                             </span>
                           </div>
@@ -160,7 +189,7 @@ export default function CourseDetailClient({ courseId }: { courseId: string }) {
                         </div>
                       </div>
 
-                      <div className="flex items-center justify-between sm:justify-end gap-3 shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-200/60">
+                      <div className="flex items-center justify-between sm:justify-end gap-3 shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-300">
                         <span className="inline-flex items-center gap-1 text-[11px] text-slate-600 font-medium">
                           <Clock className="w-3 h-3" />
                           {lesson.estimatedMinutes} menit
@@ -168,8 +197,8 @@ export default function CourseDetailClient({ courseId }: { courseId: string }) {
 
                         <Link href={`/courses/${course.id}/lessons/${lesson.id}`}>
                           <Button size="sm" variant="primary" className="gap-1 text-xs">
-                            <Play className="w-3 h-3 fill-white" />
-                            <span>Mulai</span>
+                            {completedLessonIds.has(lesson.id) ? <CheckCircle2 className="w-3 h-3" /> : <Play className="w-3 h-3 fill-white" />}
+                            <span>{completedLessonIds.has(lesson.id) ? "Pelajari Lagi" : "Mulai"}</span>
                           </Button>
                         </Link>
                       </div>
@@ -186,7 +215,7 @@ export default function CourseDetailClient({ courseId }: { courseId: string }) {
                     {(unit.quizzes || []).map((quiz) => (
                       <div
                         key={quiz.id}
-                        className="p-4 rounded-2xl bg-amber-50/50 border border-amber-200/90 flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+                        className="p-4 rounded-2xl bg-amber-50 border border-amber-400 flex flex-col sm:flex-row sm:items-center justify-between gap-3"
                       >
                         <div className="flex items-center gap-3">
                           <div className="w-8 h-8 rounded-xl bg-amber-100 text-amber-800 flex items-center justify-center font-bold text-xs shrink-0">
@@ -199,7 +228,7 @@ export default function CourseDetailClient({ courseId }: { courseId: string }) {
                         </div>
 
                         <Link href={`/courses/${course.id}/quizzes/${quiz.id}`}>
-                          <Button size="sm" variant="secondary" className="border border-amber-300 text-amber-900 hover:bg-amber-100 text-xs gap-1.5 shrink-0">
+                          <Button size="sm" variant="secondary" className="border border-amber-300 text-amber-950 hover:bg-amber-200 text-xs gap-1.5 shrink-0">
                             <Trophy className="w-3.5 h-3.5 text-amber-600" />
                             <span>Mulai Kuis ({quiz.passingScore}% Lulus)</span>
                           </Button>

@@ -17,14 +17,19 @@ export function FlashcardDeck({ items, onReviewSubmit }: FlashcardDeckProps) {
   const [isFlipped, setIsFlipped] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [reviewedCount, setReviewedCount] = useState(0);
+  const [reviewError, setReviewError] = useState("");
 
   const currentItem = items[currentIndex];
   const vocab: VocabularyItem | undefined = currentItem?.vocabulary;
 
-  const handleRate = async (grade: ReviewGrade) => {
-    if (!currentItem || isSubmitting) return;
+  const submittingRef = React.useRef(false);
 
+  const handleRate = async (grade: ReviewGrade) => {
+    if (!currentItem || submittingRef.current) return;
+
+    submittingRef.current = true;
     setIsSubmitting(true);
+    setReviewError("");
     try {
       await onReviewSubmit(currentItem.vocabularyId, grade);
       setReviewedCount((prev) => prev + 1);
@@ -38,7 +43,10 @@ export function FlashcardDeck({ items, onReviewSubmit }: FlashcardDeckProps) {
           origin: { y: 0.6 },
         });
       }
+    } catch (error) {
+      setReviewError(error instanceof Error ? error.message : "Review gagal disimpan. Silakan coba lagi.");
     } finally {
+      submittingRef.current = false;
       setIsSubmitting(false);
     }
   };
@@ -46,6 +54,10 @@ export function FlashcardDeck({ items, onReviewSubmit }: FlashcardDeckProps) {
   // Keyboard shortcut support: Space to flip, 1/2/3/4 to rate
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement | null;
+      const isInteractive = !!target?.closest("button, a, input, textarea, select, [contenteditable='true']");
+      if (isInteractive) return;
+
       if (e.code === "Space") {
         e.preventDefault();
         setIsFlipped((prev) => !prev);
@@ -101,7 +113,11 @@ export function FlashcardDeck({ items, onReviewSubmit }: FlashcardDeckProps) {
 
       {/* 3D Flip Card Container */}
       <div
-        onClick={() => setIsFlipped(!isFlipped)}
+        onClick={(event) => {
+          const target = event.target as HTMLElement;
+          if (target.closest("button, a, input, textarea, select")) return;
+          setIsFlipped((prev) => !prev);
+        }}
         className="w-full min-h-[340px] sm:min-h-[380px] bg-white border border-slate-200/90 rounded-3xl p-8 shadow-sm hover:shadow-md transition-all cursor-pointer flex flex-col justify-between relative group select-none"
       >
         {/* Top bar on card */}
@@ -171,13 +187,19 @@ export function FlashcardDeck({ items, onReviewSubmit }: FlashcardDeckProps) {
         </div>
       </div>
 
+      {reviewError && (
+        <p role="alert" className="rounded-xl border border-rose-300 bg-rose-50 px-4 py-3 text-sm font-medium text-rose-800">
+          {reviewError}
+        </p>
+      )}
+
       {/* Rating Buttons (Revealed when card is flipped) */}
       {isFlipped && (
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 animate-in fade-in slide-in-from-bottom-2 duration-200">
           <button
             type="button"
             disabled={isSubmitting}
-            onClick={() => handleRate("again")}
+            onClick={(event) => { event.stopPropagation(); void handleRate("again"); }}
             className="flex flex-col items-center justify-center p-3 rounded-2xl border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-800 transition-all active:scale-95 cursor-pointer"
           >
             <span className="text-sm font-bold">Lupa</span>
@@ -187,7 +209,7 @@ export function FlashcardDeck({ items, onReviewSubmit }: FlashcardDeckProps) {
           <button
             type="button"
             disabled={isSubmitting}
-            onClick={() => handleRate("hard")}
+            onClick={(event) => { event.stopPropagation(); void handleRate("hard"); }}
             className="flex flex-col items-center justify-center p-3 rounded-2xl border border-amber-200 bg-amber-50 hover:bg-amber-100 text-amber-800 transition-all active:scale-95 cursor-pointer"
           >
             <span className="text-sm font-bold">Sulit</span>
@@ -197,7 +219,7 @@ export function FlashcardDeck({ items, onReviewSubmit }: FlashcardDeckProps) {
           <button
             type="button"
             disabled={isSubmitting}
-            onClick={() => handleRate("good")}
+            onClick={(event) => { event.stopPropagation(); void handleRate("good"); }}
             className="flex flex-col items-center justify-center p-3 rounded-2xl border border-teal-200 bg-teal-50 hover:bg-teal-100 text-teal-800 transition-all active:scale-95 cursor-pointer"
           >
             <span className="text-sm font-bold">Baik</span>
@@ -207,7 +229,7 @@ export function FlashcardDeck({ items, onReviewSubmit }: FlashcardDeckProps) {
           <button
             type="button"
             disabled={isSubmitting}
-            onClick={() => handleRate("easy")}
+            onClick={(event) => { event.stopPropagation(); void handleRate("easy"); }}
             className="flex flex-col items-center justify-center p-3 rounded-2xl border border-emerald-200 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 transition-all active:scale-95 cursor-pointer"
           >
             <span className="text-sm font-bold">Mudah</span>

@@ -129,10 +129,86 @@ Berikut frasa praktis yang bisa langsung Anda gunakan:
 Untuk mengaktifkan tutor AI, tambahkan AI_PROVIDER, AI_API_KEY, dan AI_MODEL di Environment Variables Vercel, lalu redeploy. Sementara itu, coba tanyakan tentang nada Mandarin, salam, perkenalan, angka, atau waktu yang sudah didukung oleh panduan dasar.`;
 }
 
+
+/**
+ * Try a separately configured OpenAI-compatible backup provider.
+ * Secrets are read only from server-side environment variables.
+ */
+async function askConfiguredBackup(
+  request: TutorRequest,
+  systemPrompt: string,
+): Promise<TutorResponse | null> {
+  const provider = (process.env.AI_FALLBACK_PROVIDER || "").toLowerCase().trim();
+  const apiKey = process.env.AI_FALLBACK_API_KEY;
+  const model = (process.env.AI_FALLBACK_MODEL || "").trim();
+
+  if (!provider || !apiKey || !model) return null;
+  if (!["openai", "groq", "openrouter"].includes(provider)) {
+    console.error("AI_FALLBACK_PROVIDER must be openai, groq, or openrouter.");
+    return null;
+  }
+
+  const endpoint =
+    provider === "groq"
+      ? "https://api.groq.com/openai/v1/chat/completions"
+      : provider === "openrouter"
+      ? "https://openrouter.ai/api/v1/chat/completions"
+      : "https://api.openai.com/v1/chat/completions";
+
+  const messages = [
+    { role: "system", content: systemPrompt },
+    ...(request.conversationHistory || [])
+      .filter((item) => item.role !== "system" && item.content.trim())
+      .slice(-8)
+      .map((item) => ({
+        role: item.role as "user" | "assistant",
+        content: item.content,
+      })),
+    { role: "user", content: request.message },
+  ];
+
+  try {
+    const response = await fetch(endpoint, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({ model, messages, temperature: 0.4, max_tokens: 1000 }),
+    });
+
+    if (!response.ok) {
+      console.error(`Backup AI provider ${provider} failed with HTTP ${response.status}.`);
+      return null;
+    }
+
+    const data = await response.json();
+    const reply = data.choices?.[0]?.message?.content;
+    if (typeof reply !== "string" || !reply.trim()) {
+      console.error(`Backup AI provider ${provider} returned an empty response.`);
+      return null;
+    }
+
+    return {
+      reply,
+      source: "ai",
+      provider: `${provider.toUpperCase()} (backup)`,
+      configured: true,
+    };
+  } catch (error) {
+    console.error("Backup AI provider request failed:", error);
+    return null;
+  }
+}
+
 export async function askMandarinTutor(request: TutorRequest): Promise<TutorResponse> {
   const provider = (process.env.AI_PROVIDER || "gemini").toLowerCase();
   const apiKey = process.env.AI_API_KEY;
-  const model = process.env.AI_MODEL || (provider === "openai" ? "gpt-4o-mini" : "gemini-2.5-flash");
+  // Normalize model values supplied through Vercel environment variables.
+  const configuredModel = (process.env.AI_MODEL || (provider === "openai" ? "gpt-4o-mini" : "gemini-3.8-flash")).trim();
+  const model = provider === "gemini"
+    ? configuredModel.replace(/^models\//, "").replace(/:generateContent$/, "")
+    : configuredModel;
 
   // If no API key is provided, use high-quality offline tutor
   if (!apiKey) {
@@ -143,54 +219,103 @@ export async function askMandarinTutor(request: TutorRequest): Promise<TutorResp
     };
   }
 
-  const systemPrompt = `Anda adalah Tutor Bahasa Mandarin pribadi yang ramah, sabar, dan berwawasan di platform "MandarinVerse".
-Audiens Anda adalah orang Indonesia pemula yang belajar bahasa Mandarin dari nol.
-Aturan:
-1. Berikan penjelasan dalam Bahasa Indonesia yang hangat, jelas, dan mudah dipahami.
-2. Setiap kali menyebutkan kosakata atau kalimat Mandarin, SELALU sertakan Hanzi (karakter sederhana), Pinyin dengan tanda nada yang akurat, dan arti bahasa Indonesia.
-   Format: Hanzi (Pinyin) - Arti
-   Contoh: 谢谢 (xièxie) - Terima kasih
-3. Berikan contoh kalimat praktis dan jelaskan perbedaannya dengan tata bahasa Indonesia jika relevan.
-4. Jika murid bertanya tentang pengucapan atau nada, jelaskan posisi lidah dan analogi intonasi bahasa Indonesia.
-${request.lessonContext ? `Konteks pelajaran murid saat ini: "${request.lessonContext}". Sesuaikan contoh dengan konteks ini jika relevan.` : ""}`;
+  const systemPrompt = [
+    "Anda adalah Tutor Bahasa Mandarin pribadi yang ramah, sabar, dan akurat di platform MandarinVerse.",
+    "Audiens Anda adalah orang Indonesia yang belajar bahasa Mandarin dari nol.",
+    "Jawab pertanyaan Mandarin secara luas: Hanzi, Pinyin, nada, pelafalan, tata bahasa, kosakata, terjemahan, penggunaan sehari-hari, budaya bahasa, latihan, dan percakapan. Jangan batasi jawaban hanya pada contoh pertanyaan di UI.",
+    "Jawab inti pertanyaan terlebih dahulu dalam Bahasa Indonesia yang jelas dan sesuai tingkat pemula.",
+    "Untuk kosakata atau kalimat Mandarin, sertakan Hanzi, Pinyin dengan tanda nada, dan arti Bahasa Indonesia. Contoh: 谢谢 (xièxie) — terima kasih.",
+    "Sertakan contoh relevan dan jelaskan alasan atau perbedaannya bila membantu.",
+    "Gunakan riwayat percakapan sebagai konteks agar jawaban lanjutan konsisten.",
+    "Jangan mengarang Hanzi, Pinyin, aturan tata bahasa, atau fakta budaya. Jika ada beberapa arti, jelaskan; jika kurang konteks, tanyakan; jika tidak yakin, katakan dengan jujur.",
+    "Jika pertanyaan di luar pembelajaran Mandarin, arahkan dengan sopan kembali ke topik Mandarin.",
+    "Jangan mengklaim sudah mencari atau memverifikasi sumber eksternal.",
+    request.lessonContext ? "Konteks pelajaran saat ini: " + request.lessonContext + ". Gunakan bila relevan, tetapi tetap jawab pertanyaan murid." : "",
+  ].filter(Boolean).join("\n");
 
   try {
     if (provider === "gemini") {
       // Google Gemini API call
-      const res = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
+      const history = (request.conversationHistory || [])
+        .filter((item) => item.role !== "system" && item.content.trim())
+        .slice(-8)
+        .map((item) => ({
+          role: item.role === "assistant" ? "model" : "user",
+          parts: [{ text: item.content }],
+        }));
+
+      const requestBody = JSON.stringify({
+        systemInstruction: { parts: [{ text: systemPrompt }] },
+        contents: [
+          ...history,
+          { role: "user", parts: [{ text: request.message }] },
+        ],
+        generationConfig: { temperature: 0.4, maxOutputTokens: 1400 },
+      });
+
+      let activeModel = model;
+      let res = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${activeModel}:generateContent`,
         {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            contents: [
-              {
-                role: "user",
-                parts: [
-                  { text: systemPrompt },
-                  ...(request.conversationHistory?.map((h) => ({
-                    text: `${h.role === "assistant" ? "Tutor" : "Murid"}: ${h.content}`,
-                  })) || []),
-                  { text: `Murid: ${request.message}` },
-                ],
-              },
-            ],
-            generationConfig: {
-              temperature: 0.7,
-              maxOutputTokens: 1000,
-            },
-          }),
+          headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
+          body: requestBody,
         }
       );
 
+      // Retry once with Google's recommended model if the configured model is unavailable.
+      if (res.status === 404 && activeModel !== "gemini-3.8-flash") {
+        console.warn(`Gemini model "${activeModel}" returned 404; retrying with gemini-3.8-flash.`);
+        activeModel = "gemini-3.8-flash";
+        res = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/${activeModel}:generateContent`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
+            body: requestBody,
+          }
+        );
+      }
+
+      // Retry transient capacity/rate-limit errors with bounded backoff.
+      // This avoids infinite retries while giving temporary overload a chance to clear.
+      for (let attempt = 0; attempt < 2 && (res.status === 503 || res.status === 429 || res.status === 502 || res.status === 504); attempt++) {
+        const delayMs = attempt === 0 ? 1500 : 3500;
+        console.warn(`Gemini returned HTTP ${res.status}; retrying in ${delayMs}ms (attempt ${attempt + 1}/2).`);
+        await new Promise((resolve) => setTimeout(resolve, delayMs));
+        res = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/${activeModel}:generateContent`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
+            body: requestBody,
+          }
+        );
+      }
+
       if (!res.ok) {
+        const status = res.status;
         const errorText = await res.text();
         console.error("Gemini API error:", errorText);
+
+        // Switch to the configured backup only after Gemini's bounded retries.
+        // Avoid masking permanent configuration/authentication errors with another provider.
+        if ([429, 500, 502, 503, 504].includes(status)) {
+          const backup = await askConfiguredBackup(request, systemPrompt);
+          if (backup) return backup;
+        }
+
+        const reply = status === 503 || status === 429
+          ? "Tutor AI sedang sibuk karena permintaan ke layanan AI sedang tinggi. Pertanyaan lu belum berhasil diproses. Coba kirim ulang beberapa saat lagi."
+          : status === 404
+          ? "Model AI yang dikonfigurasi tidak tersedia (HTTP 404). Administrator perlu memeriksa AI_MODEL di Environment Variables Vercel."
+          : `Tutor AI belum bisa memproses pertanyaan ini (HTTP ${status}). Coba lagi sebentar. Jika berulang, administrator perlu memeriksa konfigurasi AI di Vercel.`;
+
         return {
-          reply: `Layanan AI sedang tidak dapat menjawab (HTTP ${res.status}). Saya berikan panduan lokal yang relevan terlebih dahulu:\n\n${getOfflineTutorResponse(request.message, request.lessonContext)}`,
+          reply,
           source: "fallback",
           configured: true,
-          error: `API Status ${res.status}`,
+          error: `API Status ${status}`,
         };
       }
 
@@ -262,8 +387,15 @@ ${request.lessonContext ? `Konteks pelajaran murid saat ini: "${request.lessonCo
     }
   } catch (err: any) {
     console.error("AI Tutor unexpected error:", err);
+
+    // Network errors can also indicate a temporary primary-provider outage.
+    if (provider === "gemini") {
+      const backup = await askConfiguredBackup(request, systemPrompt);
+      if (backup) return backup;
+    }
+
     return {
-      reply: `Terjadi kendala jaringan saat menghubungi AI Tutor. Berikut penjelasan panduan:\n\n${getOfflineTutorResponse(request.message, request.lessonContext)}`,
+      reply: "Tutor AI sementara tidak dapat dihubungi karena kendala jaringan. Pertanyaan lu belum berhasil diproses. Coba lagi beberapa saat.",
       source: "fallback",
       configured: true,
       error: err.message,

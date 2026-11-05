@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Security and authentication tests for MandarinVerse.
  *

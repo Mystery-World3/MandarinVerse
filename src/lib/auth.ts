@@ -27,8 +27,9 @@ export function getAuth() {
   const db = new Kysely<any>({
     dialect: new NeonDialect({
       connectionString: databaseUrl!,
-    }),
+    } as any),
   });
+
 
   return betterAuth({
     database: db,

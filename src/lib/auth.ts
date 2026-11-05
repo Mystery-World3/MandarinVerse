@@ -17,7 +17,6 @@ function getEnv(key: string): string | undefined {
 
 export function getAuth() {
   const databaseUrl = getEnv("DATABASE_URL");
-  console.log("[AUTH DEBUG] DATABASE_URL:", databaseUrl ? "SET" : "NOT SET");
   const secret =
     getEnv("BETTER_AUTH_SECRET") ||
     "dev-only-secret-DO-NOT-USE-IN-PRODUCTION-replace-me";
@@ -26,94 +25,95 @@ export function getAuth() {
     getEnv("NEXT_PUBLIC_APP_URL") ||
     "http://localhost:3000";
 
-  let sql;
-  try {
-    sql = neon(databaseUrl!);
-    console.log("[AUTH DEBUG] neon() OK");
-  } catch (err: any) {
-    console.error("[AUTH DEBUG] neon() FAILED:", err?.message || err);
-    throw err;
-  }
-
-  let db;
-  try {
-    db = new Kysely<any>({
-      dialect: new NeonDialect({
-        neon: {
-          query: (queryWithPlaceholders: string, params?: any[], queryOpts?: any) => {
-            return (sql as any)(queryWithPlaceholders, params, queryOpts);
-          },
-        },
-      }),
-    });
-    console.log("[AUTH DEBUG] Kysely OK");
-  } catch (err: any) {
-    console.error("[AUTH DEBUG] Kysely FAILED:", err?.message || err);
-    throw err;
-  }
-
-  return betterAuth({
-    database: db,
-    secret,
-    baseURL,
-    trustedOrigins: [
-      "https://mandarinverse.mmuflih.my.id",
-      "http://localhost:3000",
-      "http://localhost:3001",
-    ],
-    emailAndPassword: {
-      enabled: true,
-      autoSignIn: true,
-      requireEmailVerification: true,
-    },
-    emailVerification: {
-      sendOnSignUp: true,
-      sendOnSignIn: true,
-      autoSignInAfterVerification: true,
-      expiresIn: 60 * 60,
-      sendVerificationEmail: async ({ user, url }) => {
-        await sendTransactionalEmail({
-          to: user.email,
-          subject: "Verifikasi email MandarinVerse",
-          text: `Hai ${user.name || "Pembelajar"}, verifikasi email kamu melalui tautan ini (berlaku selama 1 jam): ${url}`,
-          html: `<div style="font-family:Arial,sans-serif;line-height:1.7;color:#0f172a;max-width:600px;margin:auto;padding:24px"><h1 style="color:#0f766e">Verifikasi email kamu</h1><p>Hai ${(user.name || "Pembelajar").replace(/[<>]/g, "")},</p><p>Terima kasih sudah mendaftar di MandarinVerse. Klik tombol di bawah untuk memverifikasi alamat email kamu.</p><p><a href="${url}" style="display:inline-block;background:#0f766e;color:#fff;padding:12px 20px;border-radius:10px;text-decoration:none;font-weight:bold">Verifikasi Email</a></p><p>Jika tombol tidak bisa dibuka, salin tautan ini ke browser:</p><p style="word-break:break-all">${url}</p><p style="color:#64748b;font-size:13px">Tautan berlaku selama 1 jam. Jika kamu tidak merasa mendaftar, abaikan email ini.</p></div>`,
-        });
-      },
-    },
-    databaseHooks: {
-      user: {
-        create: {
-          after: async (user) => {
-            try {
-              await sendWelcomeEmail(user.name || "Pembelajar", user.email);
-            } catch (error) {
-              console.error("Welcome email could not be sent:", error);
-            }
-          },
+  const sql = neon(databaseUrl!);
+  const db = new Kysely<any>({
+    dialect: new NeonDialect({
+      neon: {
+        query: async (queryWithPlaceholders: string, params?: any[], queryOpts?: any) => {
+          console.log("[AUTH DEBUG] query:", queryWithPlaceholders.substring(0, 100));
+          console.log("[AUTH DEBUG] queryOpts:", JSON.stringify(queryOpts));
+          try {
+            const result = await (sql as any)(queryWithPlaceholders, params, queryOpts);
+            console.log("[AUTH DEBUG] query OK, type:", Array.isArray(result) ? "array" : typeof result);
+            return result;
+          } catch (err: any) {
+            console.error("[AUTH DEBUG] query FAILED:", err?.message || String(err));
+            throw err;
+          }
         },
       },
-    },
-    user: {
-      additionalFields: {
-        role: {
-          type: "string",
-          defaultValue: "learner",
-          input: false,
-        },
-        goal: {
-          type: "string",
-          required: false,
-        },
-        dailyTargetMinutes: {
-          type: "number",
-          defaultValue: 10,
-        },
-        level: {
-          type: "string",
-          defaultValue: "Beginner",
-        },
-      },
-    },
-    plugins: [admin()],
+    }),
   });
+
+  try {
+    const authInstance = betterAuth({
+      database: db,
+      secret,
+      baseURL,
+      trustedOrigins: [
+        "https://mandarinverse.mmuflih.my.id",
+        "http://localhost:3000",
+        "http://localhost:3001",
+      ],
+      emailAndPassword: {
+        enabled: true,
+        autoSignIn: true,
+        requireEmailVerification: true,
+      },
+      emailVerification: {
+        sendOnSignUp: true,
+        sendOnSignIn: true,
+        autoSignInAfterVerification: true,
+        expiresIn: 60 * 60,
+        sendVerificationEmail: async ({ user, url }) => {
+          await sendTransactionalEmail({
+            to: user.email,
+            subject: "Verifikasi email MandarinVerse",
+            text: `Hai ${user.name || "Pembelajar"}, verifikasi email kamu melalui tautan ini (berlaku selama 1 jam): ${url}`,
+            html: `<div style="font-family:Arial,sans-serif;line-height:1.7;color:#0f172a;max-width:600px;margin:auto;padding:24px"><h1 style="color:#0f766e">Verifikasi email kamu</h1><p>Hai ${(user.name || "Pembelajar").replace(/[<>]/g, "")},</p><p>Terima kasih sudah mendaftar di MandarinVerse. Klik tombol di bawah untuk memverifikasi alamat email kamu.</p><p><a href="${url}" style="display:inline-block;background:#0f766e;color:#fff;padding:12px 20px;border-radius:10px;text-decoration:none;font-weight:bold">Verifikasi Email</a></p><p>Jika tombol tidak bisa dibuka, salin tautan ini ke browser:</p><p style="word-break:break-all">${url}</p><p style="color:#64748b;font-size:13px">Tautan berlaku selama 1 jam. Jika kamu tidak merasa mendaftar, abaikan email ini.</p></div>`,
+          });
+        },
+      },
+      databaseHooks: {
+        user: {
+          create: {
+            after: async (user) => {
+              try {
+                await sendWelcomeEmail(user.name || "Pembelajar", user.email);
+              } catch (error) {
+                console.error("Welcome email could not be sent:", error);
+              }
+            },
+          },
+        },
+      },
+      user: {
+        additionalFields: {
+          role: {
+            type: "string",
+            defaultValue: "learner",
+            input: false,
+          },
+          goal: {
+            type: "string",
+            required: false,
+          },
+          dailyTargetMinutes: {
+            type: "number",
+            defaultValue: 10,
+          },
+          level: {
+            type: "string",
+            defaultValue: "Beginner",
+          },
+        },
+      },
+      plugins: [admin()],
+    });
+    console.log("[AUTH DEBUG] betterAuth() OK");
+    return authInstance;
+  } catch (err: any) {
+    console.error("[AUTH DEBUG] betterAuth() FAILED:", err?.message || String(err));
+    throw err;
+  }
 }

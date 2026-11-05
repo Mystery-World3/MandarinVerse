@@ -29,8 +29,8 @@ export function getAuth() {
   const db = new Kysely<any>({
     dialect: new NeonDialect({
       neon: {
-        query: (queryWithPlaceholders: string, params?: any[], queryOpts?: any) => {
-          return sql(queryWithPlaceholders, params, queryOpts);
+          query: (queryWithPlaceholders: string, params?: any[], queryOpts?: any) => {
+          return (sql as any)(queryWithPlaceholders, params, queryOpts);
         },
       },
     }),

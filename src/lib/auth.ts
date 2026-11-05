@@ -28,13 +28,14 @@ export function getAuth() {
   const sql = neon(databaseUrl!);
   const kysely = new Kysely<any>({
     dialect: new NeonDialect({
-      neon: {
+      neon: () => ({
         query: (queryWithPlaceholders: string, params?: any[], queryOpts?: any) => {
           return (sql as any)(queryWithPlaceholders, params, queryOpts);
         },
-      },
+      }),
     }),
   });
+
 
   return betterAuth({
     database: {

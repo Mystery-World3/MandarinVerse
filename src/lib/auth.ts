@@ -1,5 +1,6 @@
 import { betterAuth } from "better-auth";
 import { admin } from "better-auth/plugins";
+import { neon } from "@neondatabase/serverless";
 import { Kysely } from "kysely";
 import { NeonDialect } from "kysely-neon";
 import { getCloudflareContext } from "@opennextjs/cloudflare";
@@ -24,12 +25,16 @@ export function getAuth() {
     getEnv("NEXT_PUBLIC_APP_URL") ||
     "http://localhost:3000";
 
+  const sql = neon(databaseUrl!);
   const db = new Kysely<any>({
     dialect: new NeonDialect({
-      connectionString: databaseUrl!,
-    } as any),
+      neon: {
+        query: (queryWithPlaceholders: string, params?: any[], queryOpts?: any) => {
+          return sql(queryWithPlaceholders, params, queryOpts);
+        },
+      },
+    }),
   });
-
 
   return betterAuth({
     database: db,

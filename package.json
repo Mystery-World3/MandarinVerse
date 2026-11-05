@@ -17,12 +17,16 @@
     "cf-typegen": "wrangler types --env-interface CloudflareEnv cloudflare-env.d.ts"
   },
   "dependencies": {
+    "@neon/config": "^1.10.2",
+    "@neon/env": "^1.6.10",
     "@neondatabase/serverless": "^1.2.0",
     "@opennextjs/cloudflare": "^1.20.16",
     "better-auth": "^1.7.10",
     "canvas-confetti": "^1.9.4",
     "clsx": "^2.1.1",
     "dotenv": "^18.0.8",
+    "kysely": "^0.29.8",
+    "kysely-neon": "^3.0.0",
     "lucide-react": "^1.59.0",
     "next": "16.4.2",
     "react": "19.3.0",

@@ -1,29 +1,41 @@
 import { betterAuth } from "better-auth";
 import { admin } from "better-auth/plugins";
-import { isPostgresConfigured } from "./db";
+import { Kysely } from "kysely";
+import { NeonDialect } from "kysely-neon";
+import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { sendTransactionalEmail, sendWelcomeEmail } from "./email";
 
-if (process.env.NODE_ENV === "production" && !process.env.BETTER_AUTH_SECRET) {
-  throw new Error(
-    "BETTER_AUTH_SECRET belum diatur. Hasilkan nilai acak minimal 32 karakter dan tambahkan ke environment variables produksi."
-  );
+function getEnv(key: string): string | undefined {
+  try {
+    const { env } = getCloudflareContext();
+    return (env as any)[key];
+  } catch {
+    return process.env[key];
+  }
 }
 
-const secret =
-  process.env.BETTER_AUTH_SECRET ||
-  "dev-only-secret-DO-NOT-USE-IN-PRODUCTION-replace-me";
-
-const baseURL =
-  process.env.BETTER_AUTH_URL ||
-  process.env.NEXT_PUBLIC_APP_URL ||
-  "http://localhost:3000";
-
 export function getAuth() {
+  const databaseUrl = getEnv("DATABASE_URL");
+  const secret =
+    getEnv("BETTER_AUTH_SECRET") ||
+    "dev-only-secret-DO-NOT-USE-IN-PRODUCTION-replace-me";
+  const baseURL =
+    getEnv("BETTER_AUTH_URL") ||
+    getEnv("NEXT_PUBLIC_APP_URL") ||
+    "http://localhost:3000";
+
+  const db = new Kysely<any>({
+    dialect: new NeonDialect({
+      connectionString: databaseUrl!,
+    }),
+  });
+
   return betterAuth({
+    database: db,
     secret,
     baseURL,
     trustedOrigins: [
-      "https://mandarinverse.mmuflih.my.id", 
+      "https://mandarinverse.mmuflih.my.id",
       "http://localhost:3000",
       "http://localhost:3001",
     ],
@@ -83,5 +95,3 @@ export function getAuth() {
     plugins: [admin()],
   });
 }
-
-export const auth = getAuth();

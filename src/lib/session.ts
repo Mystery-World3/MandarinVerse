@@ -1,6 +1,5 @@
-
 import { headers } from "next/headers";
-import { auth } from "./auth";
+import { getAuth } from "./auth";
 
 export interface SessionUser {
   id: string;
@@ -15,15 +14,13 @@ export interface SessionUser {
 export async function getCurrentUser(): Promise<SessionUser | null> {
   try {
     const headersList = await headers();
-    const session = await auth.api.getSession({
+    const session = await getAuth().api.getSession({
       headers: headersList,
     });
 
     if (session?.user) {
       const rawRole = (session.user as any).role;
 
-      // Pertahankan role admin; petakan role user menjadi learner.
-      // Role yang tidak dikenal tidak diberi akses admin.
       let role: SessionUser["role"];
 
       if (rawRole === "admin") {
@@ -52,10 +49,6 @@ export async function getCurrentUser(): Promise<SessionUser | null> {
   return null;
 }
 
-/**
- * Mengembalikan pengguna yang sudah terautentikasi.
- * Tidak menggunakan akun demo sebagai fallback.
- */
 export async function getRequiredUser(): Promise<SessionUser> {
   const user = await getCurrentUser();
 

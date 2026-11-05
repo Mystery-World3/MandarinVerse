@@ -17,6 +17,7 @@ function getEnv(key: string): string | undefined {
 
 export function getAuth() {
   const databaseUrl = getEnv("DATABASE_URL");
+  console.log("[AUTH DEBUG] DATABASE_URL:", databaseUrl ? "SET" : "NOT SET");
   const secret =
     getEnv("BETTER_AUTH_SECRET") ||
     "dev-only-secret-DO-NOT-USE-IN-PRODUCTION-replace-me";
@@ -25,16 +26,31 @@ export function getAuth() {
     getEnv("NEXT_PUBLIC_APP_URL") ||
     "http://localhost:3000";
 
-  const sql = neon(databaseUrl!);
-  const db = new Kysely<any>({
-    dialect: new NeonDialect({
-      neon: {
+  let sql;
+  try {
+    sql = neon(databaseUrl!);
+    console.log("[AUTH DEBUG] neon() OK");
+  } catch (err: any) {
+    console.error("[AUTH DEBUG] neon() FAILED:", err?.message || err);
+    throw err;
+  }
+
+  let db;
+  try {
+    db = new Kysely<any>({
+      dialect: new NeonDialect({
+        neon: {
           query: (queryWithPlaceholders: string, params?: any[], queryOpts?: any) => {
-          return (sql as any)(queryWithPlaceholders, params, queryOpts);
+            return (sql as any)(queryWithPlaceholders, params, queryOpts);
+          },
         },
-      },
-    }),
-  });
+      }),
+    });
+    console.log("[AUTH DEBUG] Kysely OK");
+  } catch (err: any) {
+    console.error("[AUTH DEBUG] Kysely FAILED:", err?.message || err);
+    throw err;
+  }
 
   return betterAuth({
     database: db,

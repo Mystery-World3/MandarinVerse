@@ -1,7 +1,8 @@
 import { betterAuth } from "better-auth";
 import { admin } from "better-auth/plugins";
-import { Pool } from "@neondatabase/serverless";
-import { Kysely, PostgresDialect } from "kysely";
+import { neon } from "@neondatabase/serverless";
+import { Kysely } from "kysely";
+import { NeonDialect } from "kysely-neon";
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { sendTransactionalEmail, sendWelcomeEmail } from "./email";
 
@@ -24,14 +25,22 @@ export function getAuth() {
     getEnv("NEXT_PUBLIC_APP_URL") ||
     "http://localhost:3000";
 
-  const pool = new Pool({ connectionString: databaseUrl! });
-  const db = new Kysely<any>({
-    dialect: new PostgresDialect({ pool: pool as any }),
+  const sql = neon(databaseUrl!);
+  const kysely = new Kysely<any>({
+    dialect: new NeonDialect({
+      neon: {
+        query: (queryWithPlaceholders: string, params?: any[], queryOpts?: any) => {
+          return (sql as any)(queryWithPlaceholders, params, queryOpts);
+        },
+      },
+    }),
   });
 
-
   return betterAuth({
-    database: db,
+    database: {
+      db: kysely,
+      type: "postgres",
+    },
     secret,
     baseURL,
     trustedOrigins: [

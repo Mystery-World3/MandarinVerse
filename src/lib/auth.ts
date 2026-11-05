@@ -26,8 +26,9 @@ export function getAuth() {
 
   const pool = new Pool({ connectionString: databaseUrl! });
   const db = new Kysely<any>({
-    dialect: new PostgresDialect({ pool }),
+    dialect: new PostgresDialect({ pool: pool as any }),
   });
+
 
   return betterAuth({
     database: db,
